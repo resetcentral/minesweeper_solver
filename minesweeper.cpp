@@ -2,12 +2,12 @@
 #include <random>
 #include <chrono>
 
-using MineGrid = std::vector<std::vector<unsigned short>>;
+using Minefield = std::vector<std::vector<unsigned short>>;
 
-class MinesweeperGenerator {
+class MinefieldGenerator {
     std::mt19937_64 rng;
 
-    void place_mines(MineGrid grid, const unsigned int width, const unsigned int height, const unsigned int total_mines) {
+    void place_mines(Minefield grid, const unsigned int width, const unsigned int height, const unsigned int total_mines) {
         std::uniform_int_distribution<unsigned int> x_dist(0, width-1);
         std::uniform_int_distribution<unsigned int> y_dist(0, height-1);
 
@@ -24,7 +24,7 @@ class MinesweeperGenerator {
         }
     }
 
-    void fill_hints(MineGrid grid, const unsigned int width, const unsigned int height) {
+    void fill_hints(Minefield grid, const unsigned int width, const unsigned int height) {
         for (auto x = 0; x < width; x++) {
             for (auto y = 0; y < height; y++) {
                 if (grid[x][y] == Minesweeper::MINE) {
@@ -35,17 +35,17 @@ class MinesweeperGenerator {
     }
 
 public:
-    MinesweeperGenerator() {
+    MinefieldGenerator() {
         auto seed = std::random_device {}();
         this->rng = std::mt19937_64{ seed };
     }
 
-    MinesweeperGenerator(const unsigned int seed) {
+    MinefieldGenerator(const unsigned int seed) {
         this->rng = std::mt19937_64{ seed };
     }
     
-    MineGrid generate(const unsigned int width, const unsigned int height, const unsigned int total_mines) {
-        MineGrid grid = std::vector(width, std::vector(height, static_cast<unsigned short>(0)));
+    Minefield generate(const unsigned int width, const unsigned int height, const unsigned int total_mines) {
+        Minefield grid = std::vector(width, std::vector(height, static_cast<unsigned short>(0)));
         place_mines(grid, width, height, total_mines);
         fill_hints(grid, width, height);
         
@@ -54,8 +54,8 @@ public:
 };
 
 class Minesweeper {
-    MineGrid visible;
-    MineGrid underground;
+    Minefield visible;
+    Minefield underground;
     unsigned int flags_placed {};
     unsigned int covered_tiles;
 
@@ -83,7 +83,7 @@ public:
                 // throw too many mines
             }
 
-            MinesweeperGenerator generator;
+            MinefieldGenerator generator;
             this->underground = generator.generate(width, height, total_mines);
 
             this->visible = std::vector(width, std::vector(height, COVERED));

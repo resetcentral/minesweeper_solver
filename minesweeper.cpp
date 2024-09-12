@@ -8,11 +8,14 @@ class MinesweeperGenerator {
     std::mt19937_64 rng;
 
     void place_mines(MineGrid grid, const unsigned int width, const unsigned int height, const unsigned int total_mines) {
+        std::uniform_int_distribution<unsigned int> x_dist(0, width-1);
+        std::uniform_int_distribution<unsigned int> y_dist(0, height-1);
+
         auto mines_placed = 0;
 
         while (mines_placed != total_mines) {
-            auto x = this->rng() % width;
-            auto y = this->rng() % height;
+            auto x = x_dist(this->rng);
+            auto y = y_dist(this->rng);
 
             if (grid[x][y] != Minesweeper::MINE) {
                 grid[x][y] = Minesweeper::MINE;
@@ -51,7 +54,6 @@ public:
 };
 
 class Minesweeper {
-    
     MineGrid visible;
     MineGrid underground;
     unsigned int flags_placed {};

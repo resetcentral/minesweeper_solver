@@ -22,10 +22,35 @@ TEST(MinesweeperConstructor, TooManyMinesGt) {
 class MinesweeperTest : public ::testing::Test {
     protected:
     Minesweeper* game;
+    unsigned int init_covered_tiles;
 
+    /*
+    0 0 0 0 0 0 1 9 2 
+    0 0 0 0 0 0 1 3 9 
+    1 1 1 0 0 0 0 3 9 
+    1 9 1 0 0 0 0 2 9 
+    1 1 1 1 2 2 1 2 2 
+    0 0 1 2 9 9 2 2 9 
+    0 0 1 9 4 3 3 9 2 
+    0 0 1 1 2 9 2 2 2 
+    0 0 0 0 1 1 1 1 9 
+    0 0 0 0 0 0 1 2 2 
+    0 0 1 1 1 0 1 9 1 
+    0 0 1 9 1 0 1 1 1
+    */
     virtual void SetUp() {
         MinefieldGenerator gen { 100 };
         this->game = new Minesweeper (gen, 9, 12, 14 );
+        this->init_covered_tiles = 9 * 12;
+        
+        // MinefieldGenerator g2 { 100 };
+        // Minefield field = g2.generate(9, 12, 14);
+        // for (auto y = 0; y < 12; y++) {
+        //     for (auto x = 0; x < 9; x++) {
+        //         printf("%d ", field[x][y]);
+        //     }
+        //     printf("\n");
+        // }
     }
 
     virtual void TearDown() {
@@ -107,6 +132,51 @@ TEST_F(MinesweeperTest, UncoverTileOutOfBoundsX) {
 TEST_F(MinesweeperTest, UncoverTileOutOfBoundsY) {
     EXPECT_THROW(game->toggle_flag(3, 12), std::out_of_range);
 }
+
+TEST_F(MinesweeperTest, UncoverTileMine) {
+    EXPECT_EQ(game->covered_tiles_count(), init_covered_tiles);
+    EXPECT_EQ(game->uncover_tile(7, 0), Minesweeper::GameState::Lose);
+    EXPECT_EQ(game->get_tile(7, 0), Minesweeper::MINE);
+    EXPECT_EQ(game->covered_tiles_count(), init_covered_tiles-1);
+}
+
+TEST_F(MinesweeperTest, UncoverTileNum) {
+    EXPECT_EQ(game->covered_tiles_count(), init_covered_tiles);
+    EXPECT_EQ(game->uncover_tile(4, 4), Minesweeper::GameState::Continue);
+    EXPECT_EQ(game->get_tile(4, 4), 2);
+    EXPECT_EQ(game->covered_tiles_count(), init_covered_tiles-1);
+}
+
+TEST_F(MinesweeperTest, UncoverTileSame) {
+    EXPECT_EQ(game->covered_tiles_count(), init_covered_tiles);
+    game->uncover_tile(4, 4);
+    EXPECT_EQ(game->covered_tiles_count(), init_covered_tiles-1);
+    game->uncover_tile(4, 4);
+    EXPECT_EQ(game->covered_tiles_count(), init_covered_tiles-1);
+}
+
+TEST_F(MinesweeperTest, UncoverTileFlag) {
+    EXPECT_EQ(game->covered_tiles_count(), init_covered_tiles);
+    game->toggle_flag(0, 0);
+    game->uncover_tile(0, 0);
+    EXPECT_EQ(game->covered_tiles_count(), init_covered_tiles);
+}
+
+TEST_F(MinesweeperTest, UncoverTileZero) {
+    EXPECT_EQ(game->covered_tiles_count(), init_covered_tiles);
+    EXPECT_EQ(game->uncover_tile(0, 0), Minesweeper::GameState::Continue);
+    EXPECT_EQ(game->get_tile(0, 1), 0);
+    EXPECT_EQ(game->get_tile(1, 0), 0);
+    EXPECT_EQ(game->get_tile(1, 1), 0);
+    EXPECT_EQ(game->get_tile(6, 3), 0);
+    EXPECT_EQ(game->get_tile(1, 2), 1);
+    EXPECT_EQ(game->get_tile(2, 2), 1);
+    EXPECT_EQ(game->get_tile(7, 1), 3);
+    EXPECT_EQ(game->get_tile(6, 4), 1);
+    EXPECT_EQ(game->covered_tiles_count(), init_covered_tiles-35);
+}
+
+
 
 // uncover tile tests
 // - 5

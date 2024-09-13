@@ -4,6 +4,8 @@ project(minesweeper)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+set(CMAKE_BUILD_TYPE "Debug")
+
 include(FetchContent)
 FetchContent_Declare(
   googletest
@@ -13,13 +15,63 @@ FetchContent_MakeAvailable(googletest)
 
 enable_testing()
 
-add_executable(
-  
+add_library(
+  minesweeper
+  STATIC
+  include/minesweeper.hpp
+  lib/minesweeper.cpp
 )
+target_include_directories(minesweeper PUBLIC include/)
+
+target_compile_options(
+  minesweeper
+  PRIVATE
+  "-fprofile-instr-generate"
+  "-fcoverage-mapping"
+)
+
+add_executable(
+  generator
+  src/tests/generator.cpp
+)
+target_include_directories(generator PUBLIC include/)
+
+target_compile_options(
+  generator
+  PRIVATE
+  "-fprofile-instr-generate"
+  "-fcoverage-mapping"
+)
+
 target_link_libraries(
-  
+  generator
+  minesweeper
   GTest::gtest_main
+  "-fprofile-instr-generate"
+  "-fcoverage-mapping"
+)
+
+add_executable(
+  minesweeper_test
+  src/tests/minesweeper.cpp
+)
+target_include_directories(minesweeper_test PUBLIC include/)
+
+target_compile_options(
+  minesweeper_test
+  PRIVATE
+  "-fprofile-instr-generate"
+  "-fcoverage-mapping"
+)
+
+target_link_libraries(
+  minesweeper_test
+  minesweeper
+  GTest::gtest_main
+  "-fprofile-instr-generate"
+  "-fcoverage-mapping"
 )
 
 include(GoogleTest)
-gtest_discover_tests(hello_test)
+gtest_discover_tests(generator)
+gtest_discover_tests(minesweeper_test)

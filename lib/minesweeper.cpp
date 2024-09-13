@@ -27,9 +27,6 @@ namespace minesweeper {
         return x < 0 || x >= this->width || y < 0 || y >= this->height;
     }
 
-    // move + copy semantics
-    // allow array-like operations?
-
     unsigned short Minesweeper::get_tile(const int x, const int y) {
         if (out_of_bounds(x, y)) {
             throw std::out_of_range("Tile out of bounds");
@@ -55,10 +52,10 @@ namespace minesweeper {
             return Minesweeper::GameState::Continue;
         }
 
-        this->visible[x][y] = this->field[x][y];
+        const auto tile = this->field[x][y];
+        this->visible[x][y] = tile;
         this->covered_tiles--;
 
-        const auto tile = this->visible[x][y];
         if (tile == MINE) {
             return Minesweeper::GameState::Lose;
         }

@@ -176,7 +176,16 @@ TEST_F(MinesweeperTest, UncoverTileZero) {
     EXPECT_EQ(game->covered_tiles_count(), init_covered_tiles-35);
 }
 
-
+TEST(MinesweeperUncoverTile, Win) {
+    /*
+    9 1 0
+    1 1 0
+    0 0 0
+    */
+    MinefieldGenerator gen { 1 };
+    Minesweeper game { gen, 3, 3, 1 };
+    EXPECT_EQ(game.uncover_tile(2, 2), Minesweeper::GameState::Win);
+}
 
 // uncover tile tests
 // - 5

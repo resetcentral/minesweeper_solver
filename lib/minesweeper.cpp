@@ -1,15 +1,9 @@
-#include <vector>
-#include <random>
+#include <minesweeper.hpp>
 #include <algorithm>
 #include <stdexcept>
-#include <minesweeper.hpp>
 
 namespace minesweeper {
-    bool Minesweeper::out_of_bounds(const unsigned int x, const unsigned int y) {
-        return x >= this->width || y >= this->height;
-    }
-
-    Minesweeper::Minesweeper(const unsigned int width, const unsigned int height, const unsigned int total_mines)
+    Minesweeper::Minesweeper(MinefieldGenerator generator, unsigned int width, const unsigned int height, const unsigned int total_mines)
         : total_mines{ total_mines },
         width { width },
         height { height },
@@ -21,10 +15,16 @@ namespace minesweeper {
             if (total_mines >= covered_tiles) {
                 throw std::invalid_argument("Too many mines");
             }
-
-            MinefieldGenerator generator;
+            
             this->underground = generator.generate(width, height, total_mines);
             this->visible = std::vector(width, std::vector(height, COVERED));
+    }
+
+    Minesweeper::Minesweeper(unsigned int width, const unsigned int height, const unsigned int total_mines)
+        : Minesweeper::Minesweeper(MinefieldGenerator {}, width, height, total_mines) {}
+    
+    bool Minesweeper::out_of_bounds(const unsigned int x, const unsigned int y) {
+        return x >= this->width || y >= this->height;
     }
 
     // move + copy semantics
@@ -46,7 +46,7 @@ namespace minesweeper {
         return this->flags_placed;
     }
 
-    void Minesweeper::uncover_tile(const unsigned int x, const unsigned int y) {
+    Minesweeper::GameState Minesweeper::uncover_tile(const unsigned int x, const unsigned int y) {
         if (out_of_bounds(x, y)) {
             throw std::out_of_range("Tile out of bounds");
         }
@@ -56,7 +56,7 @@ namespace minesweeper {
 
         const auto tile = this->visible[x][y];
         if (tile == MINE) {
-            // game over
+            return Minesweeper::GameState::Lose;
         }
 
         if (tile == 0) {
@@ -70,11 +70,11 @@ namespace minesweeper {
             }
         }
 
-        // check win state
         if (this->covered_tiles == this->total_mines) {
-            // win
+            return Minesweeper::GameState::Win;
+        } else {
+            return Minesweeper::GameState::Continue;
         }
-        
     }
 
     void Minesweeper::toggle_flag(const unsigned int x, const unsigned int y) {
@@ -97,6 +97,7 @@ namespace minesweeper {
             // Ignore if any other value
         }
     }
+
 
     void MinefieldGenerator::place_mines(Minefield* grid, const unsigned int width, const unsigned int height, const unsigned int total_mines) {
         std::uniform_int_distribution<unsigned int> x_dist(0, width-1);

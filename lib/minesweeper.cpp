@@ -16,21 +16,21 @@ namespace minesweeper {
                 throw std::invalid_argument("Too many mines");
             }
             
-            this->underground = generator.generate(width, height, total_mines);
+            this->field = generator.generate(width, height, total_mines);
             this->visible = std::vector(width, std::vector(height, COVERED));
     }
 
     Minesweeper::Minesweeper(unsigned int width, const unsigned int height, const unsigned int total_mines)
         : Minesweeper::Minesweeper(MinefieldGenerator {}, width, height, total_mines) {}
     
-    bool Minesweeper::out_of_bounds(const unsigned int x, const unsigned int y) {
-        return x >= this->width || y >= this->height;
+    bool Minesweeper::out_of_bounds(const int x, const int y) {
+        return x < 0 || x >= this->width || y < 0 || y >= this->height;
     }
 
     // move + copy semantics
     // allow array-like operations?
 
-    unsigned short Minesweeper::get_tile(const unsigned int x, const unsigned int y) {
+    unsigned short Minesweeper::get_tile(const int x, const int y) {
         if (out_of_bounds(x, y)) {
             throw std::out_of_range("Tile out of bounds");
         }
@@ -46,19 +46,23 @@ namespace minesweeper {
         return this->flags_placed;
     }
 
-    Minesweeper::GameState Minesweeper::uncover_tile(const unsigned int x, const unsigned int y) {
+    Minesweeper::GameState Minesweeper::uncover_tile(const int x, const int y) {
         if (out_of_bounds(x, y)) {
             throw std::out_of_range("Tile out of bounds");
         }
 
-        this->visible[x][y] = this->underground[x][y];
+        if (this->visible[x][y] != Minesweeper::COVERED) {
+            return Minesweeper::GameState::Continue;
+        }
+
+        this->visible[x][y] = this->field[x][y];
         this->covered_tiles--;
 
         const auto tile = this->visible[x][y];
         if (tile == MINE) {
             return Minesweeper::GameState::Lose;
         }
-
+        
         if (tile == 0) {
             // Uncover all tiles adjacent to this one
             for (auto i = x-1; i <= x+1; i++) {
@@ -77,7 +81,7 @@ namespace minesweeper {
         }
     }
 
-    void Minesweeper::toggle_flag(const unsigned int x, const unsigned int y) {
+    void Minesweeper::toggle_flag(const int x, const int y) {
         if (out_of_bounds(x, y)) {
             throw std::out_of_range("Tile out of bounds");
         }

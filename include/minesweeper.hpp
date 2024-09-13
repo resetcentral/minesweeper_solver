@@ -21,11 +21,11 @@ namespace minesweeper {
 
     class Minesweeper {
         Minefield visible;
-        Minefield underground;
+        Minefield field;
         unsigned int flags_placed {};
         unsigned int covered_tiles;
 
-        bool out_of_bounds(const unsigned int x, const unsigned int y);
+        bool out_of_bounds(const int x, const int y);
 
     public:
         enum GameState {
@@ -43,14 +43,14 @@ namespace minesweeper {
 
         Minesweeper(const unsigned int width, const unsigned int height, const unsigned int total_mines);
 
-        unsigned short get_tile(const unsigned int x, const unsigned int y);
+        unsigned short get_tile(const int x, const int y);
 
         unsigned int covered_tiles_count() noexcept;
 
         unsigned int flags_placed_count() noexcept;
 
-        GameState uncover_tile(const unsigned int x, const unsigned int y);
+        GameState uncover_tile(const int x, const int y);
 
-        void toggle_flag(const unsigned int x, const unsigned int y);
+        void toggle_flag(const int x, const int y);
     };
 }

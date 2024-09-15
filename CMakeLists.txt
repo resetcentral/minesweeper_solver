@@ -72,6 +72,16 @@ target_link_libraries(
   "-fcoverage-mapping"
 )
 
+add_executable(
+  solver
+  src/solver.cpp
+)
+target_include_directories(generator PUBLIC include/)
+target_link_libraries(
+  solver
+  minesweeper
+)
+
 include(GoogleTest)
 gtest_discover_tests(generator)
 gtest_discover_tests(minesweeper_test)

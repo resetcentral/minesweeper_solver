@@ -43,6 +43,10 @@ namespace minesweeper {
         return this->flags_placed;
     }
 
+    int Minesweeper::mines_left() noexcept {
+        return this->total_mines - this->flags_placed;
+    }
+
     Minesweeper::GameState Minesweeper::uncover_tile(const int x, const int y) {
         if (out_of_bounds(x, y)) {
             throw std::out_of_range("Tile out of bounds");

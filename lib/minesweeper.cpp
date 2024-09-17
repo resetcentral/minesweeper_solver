@@ -43,6 +43,10 @@ namespace minesweeper {
         return this->flags_placed;
     }
 
+    const Minefield& Minesweeper::get_board() noexcept {
+        return this->visible;
+    }
+
     int Minesweeper::mines_left() noexcept {
         return this->total_mines - this->flags_placed;
     }
@@ -138,7 +142,8 @@ namespace minesweeper {
     }
 
     MinefieldGenerator::MinefieldGenerator() {
-        auto seed = std::random_device {}();
+        auto rd = std::random_device {};
+        auto seed = rd();
         this->rng = std::mt19937_64{ seed };
     }
 

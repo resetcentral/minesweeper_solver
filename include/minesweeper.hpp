@@ -49,6 +49,8 @@ namespace minesweeper {
 
         unsigned int flags_placed_count() noexcept;
 
+        const Minefield& get_board() noexcept;
+
         int mines_left() noexcept;
 
         GameState uncover_tile(const int x, const int y);

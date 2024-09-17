@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.18)
 project(minesweeper)
 
 set(CMAKE_CXX_STANDARD 20)
@@ -12,6 +12,10 @@ FetchContent_Declare(
   URL https://github.com/google/googletest/archive/03597a01ee50ed33e9dfd640b249b4be3799d395.zip
 )
 FetchContent_MakeAvailable(googletest)
+
+find_package(Boost
+  1.86.0
+  COMPONENTS headers)
 
 enable_testing()
 
@@ -80,6 +84,7 @@ target_include_directories(generator PUBLIC include/)
 target_link_libraries(
   solver
   minesweeper
+  Boost::headers
 )
 
 include(GoogleTest)

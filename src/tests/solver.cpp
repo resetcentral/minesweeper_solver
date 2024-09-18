@@ -177,8 +177,8 @@ TEST_F(NodeTest, AdjacentCoveredCount) {
 
 TEST_F(NodeTest, CoveredEdge) {
     nodes[0][0].set_value(1);
-    nodes[1][0].set_value(1);
     nodes[0][1].set_value(1);
+    nodes[1][0].set_value(1);
     
     EXPECT_FALSE(nodes[0][0].covered_edge());
     EXPECT_FALSE(nodes[0][1].covered_edge());
@@ -189,4 +189,21 @@ TEST_F(NodeTest, CoveredEdge) {
     EXPECT_TRUE(nodes[2][0].covered_edge());
     EXPECT_TRUE(nodes[2][1].covered_edge());
     EXPECT_FALSE(nodes[2][2].covered_edge());
+}
+
+TEST_F(NodeTest, NumberEdge) {
+    nodes[0][0].set_value(1);
+    nodes[0][1].set_value(1);
+    nodes[1][0].set_value(1);
+    nodes[1][1].set_value(1);
+    
+    EXPECT_FALSE(nodes[0][0].number_edge());
+    EXPECT_TRUE(nodes[0][1].number_edge());
+    EXPECT_FALSE(nodes[0][2].number_edge());
+    EXPECT_TRUE(nodes[1][0].number_edge());
+    EXPECT_TRUE(nodes[1][1].number_edge());
+    EXPECT_FALSE(nodes[1][2].number_edge());
+    EXPECT_FALSE(nodes[2][0].number_edge());
+    EXPECT_FALSE(nodes[2][1].number_edge());
+    EXPECT_FALSE(nodes[2][2].number_edge());
 }

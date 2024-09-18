@@ -207,3 +207,24 @@ TEST_F(NodeTest, NumberEdge) {
     EXPECT_FALSE(nodes[2][1].number_edge());
     EXPECT_FALSE(nodes[2][2].number_edge());
 }
+
+TEST_F(NodeTest, CoveredSafe) {
+    /*
+     * 2 f O
+     * O O 1
+     * O O O
+    */
+    nodes[0][0].set_value(2);
+    nodes[2][1].set_value(1);
+    nodes[1][0].set_value(Minesweeper::FLAG);
+
+    EXPECT_FALSE(nodes[0][0].covered_safe());
+    EXPECT_FALSE(nodes[0][1].covered_safe());
+    EXPECT_FALSE(nodes[0][2].covered_safe());
+    EXPECT_FALSE(nodes[1][0].covered_safe());
+    EXPECT_TRUE(nodes[1][1].covered_safe());
+    EXPECT_TRUE(nodes[1][2].covered_safe());
+    EXPECT_TRUE(nodes[2][0].covered_safe());
+    EXPECT_FALSE(nodes[2][1].covered_safe());
+    EXPECT_TRUE(nodes[2][2].covered_safe());
+}

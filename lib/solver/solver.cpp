@@ -1,4 +1,4 @@
-#include <solver.hpp>
+#include <solver/solver.hpp>
 #include <stdexcept>
 #include <chrono>
 #include <thread>

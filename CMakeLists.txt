@@ -88,6 +88,18 @@ target_link_libraries(
   Boost::headers
 )
 
+add_library(
+  solver
+  include/solver/solver.hpp
+  lib/solver/solver.cpp
+)
+target_include_directories(generator PUBLIC include/)
+target_link_libraries(
+  solver
+  node
+  Boost::headers
+)
+
 add_executable(
   solver_choose_test
   src/tests/solver/choose.cpp
@@ -108,6 +120,19 @@ target_include_directories(solver_node_test PUBLIC include/)
 target_link_libraries(
   solver_node_test
   node
+  GTest::gtest_main
+  gmock_main
+)
+
+add_executable(
+  solver_test
+  src/tests/solver/solver.cpp
+)
+target_include_directories(solver_test PUBLIC include/)
+
+target_link_libraries(
+  solver_test
+  solver
   GTest::gtest_main
   gmock_main
 )

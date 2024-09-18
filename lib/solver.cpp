@@ -80,7 +80,7 @@ namespace minesweeper::solver {
     }
 
     void Node::set_mine_probability(boost::rational<unsigned int> mp) {
-        if (mp < 0 || mp > 1) {
+        if (mp > 1) {
             throw std::invalid_argument("Mine probability cannot be less than 0 or greater than 1.");
         }
 

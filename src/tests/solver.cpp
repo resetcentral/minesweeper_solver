@@ -45,6 +45,21 @@ TEST(SolverNode, AddAdjacent) {
     EXPECT_THAT(node2.adjacent(), ElementsAre(&node1));
 }
 
+TEST(SolverNode, SetMineProbability) {
+    auto node1 = Node(3, 6);
+    boost::rational<unsigned int> prob{1, 2};
+    node1.set_mine_probability(prob);
+
+    EXPECT_EQ(node1.mine_probability(), prob);
+}
+
+TEST(SolverNode, SetMineProbabilityThrowHigh) {
+    auto node1 = Node(3, 6);
+    boost::rational<unsigned int> prob{4, 3};
+
+    EXPECT_THROW(node1.set_mine_probability(prob), std::invalid_argument);
+}
+
 class NodeTest : public ::testing::Test {
     protected:
     std::vector<std::vector<Node>> nodes;

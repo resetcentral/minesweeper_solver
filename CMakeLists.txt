@@ -76,9 +76,10 @@ target_link_libraries(
   "-fcoverage-mapping"
 )
 
-add_executable(
+add_library(
   solver
-  src/solver.cpp
+  include/solver.hpp
+  lib/solver.cpp
 )
 target_include_directories(generator PUBLIC include/)
 target_link_libraries(
@@ -87,6 +88,20 @@ target_link_libraries(
   Boost::headers
 )
 
+add_executable(
+  solver_test
+  src/tests/solver.cpp
+)
+target_include_directories(solver_test PUBLIC include/)
+
+target_link_libraries(
+  solver_test
+  solver
+  GTest::gtest_main
+  gmock_main
+)
+
 include(GoogleTest)
 gtest_discover_tests(generator)
 gtest_discover_tests(minesweeper_test)
+gtest_discover_tests(solver_test)

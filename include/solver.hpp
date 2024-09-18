@@ -1,4 +1,6 @@
 #include <minesweeper.hpp>
+#include <boost/rational.hpp>
+#include <set>
 
 namespace minesweeper::solver {
     using minesweeper::Minesweeper;
@@ -31,16 +33,53 @@ namespace minesweeper::solver {
     template<std::size_t N, std::size_t M>
         requires (N >= M)
     constexpr std::array<std::array<unsigned int, M+1>, N+1> choose_matrix() {
-        std::array<std::array<unsigned int, M+1>, N+1> choose_matrix{};
+        std::array<std::array<unsigned int, M+1>, N+1> choose{};
         auto factorials = factorial_list<N>();
 
         for (std::size_t n = 0; n <= N; n++) {
             auto k_max = std::min(M, n);
             for (auto k = 0; k <= k_max; k++) {
-                choose_matrix[n][k] = factorials[n] / (factorials[n-k] * factorials[k]);
+                choose[n][k] = factorials[n] / (factorials[n-k] * factorials[k]);
             }
         }
 
-        return choose_matrix;
+        return choose;
     }
+
+    class Node {
+        std::pair<unsigned int, unsigned int> _coord;
+        unsigned int _value = Minesweeper::COVERED;
+        std::set<Node*> _adjacent{};
+        boost::rational<unsigned int> _mine_probability{};
+        unsigned int _adjacent_mines_left = 0;
+
+    public:
+        Node(unsigned int x, unsigned int y);
+
+        std::pair<unsigned int, unsigned int> coord();
+
+        unsigned int value();
+
+        void set_value(unsigned int value);
+
+        const std::set<Node*>& adjacent();
+
+        std::set<Node*> adjacent_covered();
+
+        unsigned int adjacent_covered_count();
+
+        void add_adjacent(Node* node);
+
+        boost::rational<unsigned int> mine_probability();
+
+        void set_mine_probability(boost::rational<unsigned int> mp);
+
+        unsigned int adjacent_mines_left();
+
+        bool edge_covered();
+
+        bool edge_num();
+
+        bool safe();
+    };
 }

@@ -1,112 +1,128 @@
 #include <solver.hpp>
-#include <array>
-#include <set>
+
 #include <stdexcept>
 #include <chrono>
 #include <thread>
 #include "stdlib.h"
 #include <algorithm>
 #include <iterator>
-#include <boost/rational.hpp>
+
 
 namespace minesweeper::solver {
     using minesweeper::Minesweeper;
 
+    Node::Node(unsigned int x, unsigned int y)
+        : _coord { x, y } {}
+
+    std::pair<unsigned int, unsigned int> Node::coord() {
+        return _coord;
+    }
+
+    unsigned int Node::value() {
+        return _value;
+    }
+
+    void Node::set_value(unsigned int value) {
+        _value = value;
+
+        if (value == Minesweeper::FLAG) {
+            set_mine_probability(1);
+            for (auto node : _adjacent) {
+                if (node->value() <= 8) {
+                    node->_adjacent_mines_left--;
+                }
+            }
+        } else if (value <= 8) {
+            set_mine_probability(0);
+            _adjacent_mines_left = value;
+            for (auto node : _adjacent) {
+                if (node->value() == Minesweeper::FLAG) {
+                    _adjacent_mines_left--;
+                }
+            }
+        }
+    }
+
+    const std::set<Node*>& Node::adjacent() {
+        return _adjacent;
+    }
+
+    std::set<Node*> Node::adjacent_covered() {
+        std::set<Node*> covered;
+        for (auto node : _adjacent) {
+            if (node->value() == Minesweeper::COVERED) {
+                covered.insert(node);
+            }
+        }
+
+        return covered;
+    }
+
+    unsigned int Node::adjacent_covered_count() {
+        unsigned int count = 0;
+        for (auto node : _adjacent) {
+            if (node->value() == Minesweeper::COVERED) {
+                count++;
+            }
+        }
+
+        return count;
+    }
+
+    void Node::add_adjacent(Node* node) {
+        if(_adjacent.insert(node).second) {
+            node->add_adjacent(this);
+        }
+    }
+
+    boost::rational<unsigned int> Node::mine_probability() {
+        return _mine_probability;
+    }
+
+    void Node::set_mine_probability(boost::rational<unsigned int> mp) {
+        if (mp < 0 || mp > 1) {
+            throw std::invalid_argument("Mine probability cannot be less than 0 or greater than 1.");
+        }
+
+        _mine_probability = mp;
+    }
+
+    unsigned int Node::adjacent_mines_left() {
+        return _adjacent_mines_left;
+    }
+
+    bool Node::edge_covered() {
+        if (_value == Minesweeper::COVERED) {
+            for (auto node : _adjacent) {
+                if (node->value() <= 8) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    bool Node::edge_num() {
+        if (_value <= 8) {
+            for (auto node : _adjacent) {
+                if (node->value() == Minesweeper::COVERED) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    bool Node::safe() {
+        for (auto adj_node: _adjacent) {
+            if (adj_node->value() <= 8 && adj_node->adjacent_mines_left() == 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     class MinesweeperSolver {
-        struct Node {
-            unsigned int x,y;
-            unsigned int value;
-            boost::rational<unsigned int> mine_probability;
-            std::set<Node*> adjacent{};
-            int adjacent_mines_left = 0;
-
-            Node(unsigned int x, unsigned int y, boost::rational<unsigned int> initial_probability)
-                : x { x },
-                y { y },
-                mine_probability { initial_probability } {
-            }
-
-            unsigned int adjacent_covered() {
-                unsigned int count = 0;
-                for (auto node : adjacent) {
-                    if (node->value == Minesweeper::COVERED) {
-                        count++;
-                    }
-                }
-                return count;
-            }
-
-            std::set<Node*> covered_adjacent() {
-                std::set<Node*> covered;
-
-                for (auto node : this->adjacent) {
-                    if (node->value == Minesweeper::COVERED) {
-                        covered.insert(node);
-                    }
-                }
-
-                return covered;
-            }
-
-            bool edge_covered() {
-                if (this->value == Minesweeper::COVERED) {
-                    for (auto node : adjacent) {
-                        if (node->value <= 8) {
-                            return true;
-                        }
-                    }
-                }
-                return false;
-            }
-
-            bool edge_num() {
-                if (this->value <= 8) {
-                    for (auto node : adjacent) {
-                        if (node->value == Minesweeper::COVERED) {
-                            return true;
-                        }
-                    }
-                }
-                return false;
-            }
-
-            bool safe() {
-                for (auto adj_node: this->adjacent) {
-                    if (adj_node->value <= 8 && adj_node->adjacent_mines_left == 0) {
-                        return true;
-                    }
-                }
-                return false;
-            }
-
-            void add_adjacent(Node* node) {
-                this->adjacent.insert(node);
-                node->adjacent.insert(this);
-            }
-
-            void set_value(unsigned int value) {
-                this->value = value;
-
-                if (value == Minesweeper::FLAG) {
-                    this->mine_probability = 1;
-                    for (auto node : adjacent) {
-                        if (node->value <= 8) {
-                            node->adjacent_mines_left--;
-                        }
-                    }
-                } else if (value <= 8) {
-                    this->mine_probability = 0;
-                    this->adjacent_mines_left = value;
-                    for (auto node : adjacent) {
-                        if (node->value == Minesweeper::FLAG) {
-                            this->adjacent_mines_left--;
-                        }
-                    }
-                }
-            }
-        };
-
-
         Minesweeper game;
         std::vector<std::vector<Node>> state;
         std::pair<unsigned int, unsigned int> last_clicked;
@@ -118,16 +134,8 @@ namespace minesweeper::solver {
 
             boost::rational<unsigned int> edge_probability {};
             for (auto node : edge_covered) {
-                edge_probability += node->mine_probability;
+                edge_probability += node->mine_probability();
             }
-
-            // for (auto node : edge_nums) {
-            //     mine_sum += node->adjacent_mines_left;
-            //     for (auto adj_node : node->covered_adjacent()) {
-            //         covered.erase(adj_node);
-            //         edge_probability += adj_node->mine_probability;
-            //     }
-            // }
 
             auto non_edge_sum = boost::rational<unsigned int>{ game.mines_left() } - edge_probability;
             auto non_edge_covered_count = covered.size() - edge_covered.size();
@@ -135,7 +143,7 @@ namespace minesweeper::solver {
                 auto non_edge_probability = non_edge_sum / boost::rational<unsigned int>{ non_edge_covered_count };
                 for (auto node : covered) {
                     if (!edge_covered.contains(node)) {
-                        node->mine_probability = non_edge_probability;
+                        node->set_mine_probability(non_edge_probability);
                     }
                 }
             }
@@ -149,7 +157,7 @@ namespace minesweeper::solver {
                 for (auto x = 0; x < game.width; x++) {
                     std::vector<Node> col;
                     for (auto y = 0; y < game.height; y++) {
-                        auto n = Node(x, y, default_probability);
+                        auto n = Node(x, y);
                         n.set_value(board[x][y]);
                         col.push_back(n);
                     }
@@ -177,24 +185,26 @@ namespace minesweeper::solver {
                 }
             }
         
-        void update_state(const unsigned int x, const unsigned int y) {
+        void update_state(Node* node) {
+            auto [x, y] = node->coord();
             auto tile = game.get_tile(x, y);
-            state[x][y].set_value(tile);
 
+            node->set_value(tile);
             if (tile == 0) {
-                for (auto adjacent_tile : state[x][y].adjacent) {
-                    if (adjacent_tile->value == Minesweeper::COVERED) {
-                        update_state(adjacent_tile->x, adjacent_tile->y);
+                for (auto adjacent_tile : node->adjacent()) {
+                    if (adjacent_tile->value() == Minesweeper::COVERED) {
+                        update_state(adjacent_tile);
                     }
                 }
             }
         }
 
-        Minesweeper::GameState take_turn(const unsigned int x, const unsigned int y) {
-            last_clicked = std::pair {x, y};
+        Minesweeper::GameState take_turn(Node* node) {
+            last_clicked = node->coord();
             view_state();
+            auto [x, y] = node->coord();
             auto game_state = game.uncover_tile(x, y);
-            update_state(x, y);
+            update_state(node);
             view_state();
 
             return game_state;
@@ -227,19 +237,20 @@ namespace minesweeper::solver {
         }
 
         void flag(Node* node) {
-            last_clicked = std::pair {node->x, node->y};
+            last_clicked = node->coord();
             view_state();
-            game.toggle_flag(node->x, node->y);
+            auto [x, y] = node->coord();
+            game.toggle_flag(x, y);
             node->set_value(Minesweeper::FLAG);
             view_state();
         }
 
         void basic_flag(std::set<Node*> edge_nums) {
             for (auto node : edge_nums) {
-                auto adjacent_covered = node->adjacent_covered();
-                if (adjacent_covered == node->adjacent_mines_left) {
-                    for (auto adj_node: node->adjacent) {
-                        if (adj_node->value == Minesweeper::COVERED) {
+                auto adjacent_covered = node->adjacent_covered_count();
+                if (adjacent_covered == node->adjacent_mines_left()) {
+                    for (auto adj_node: node->adjacent()) {
+                        if (adj_node->value() == Minesweeper::COVERED) {
                             flag(adj_node);
                         }
                     }
@@ -307,8 +318,8 @@ namespace minesweeper::solver {
                 } else if (left_count > 0) {
                     for (auto node : left) {
                         boost::rational<unsigned int> probability{ left_picked / left_count , running_total };
-                        if (probability.denominator() < node->mine_probability.denominator()) {
-                            node->mine_probability = probability;
+                        if (probability.denominator() < node->mine_probability().denominator()) {
+                            node->set_mine_probability(probability);
                         }
                         if (probability == 1) {
                             definitive.push_back(std::pair{node, true});
@@ -323,8 +334,8 @@ namespace minesweeper::solver {
                 } else if (overlap_count > 0) {
                     for (auto node : overlap) {
                         boost::rational<unsigned int> probability{ overlap_picked / overlap_count , running_total };
-                        if (probability.denominator() < node->mine_probability.denominator()) {
-                            node->mine_probability = probability;
+                        if (probability.denominator() < node->mine_probability().denominator()) {
+                            node->set_mine_probability(probability);
                         }
                         if (probability == 1) {
                             definitive.push_back(std::pair{node, true});
@@ -339,8 +350,8 @@ namespace minesweeper::solver {
                 } else if (right_count > 0) {
                     for (auto node : right) {
                         boost::rational<unsigned int> probability{ right_picked / right_count , running_total };
-                        if (probability.denominator() < node->mine_probability.denominator()) {
-                            node->mine_probability = probability;
+                        if (probability.denominator() < node->mine_probability().denominator()) {
+                            node->set_mine_probability(probability);
                         }
                         if (probability == 1) {
                             definitive.push_back(std::pair{node, true});
@@ -360,7 +371,7 @@ namespace minesweeper::solver {
                     if (mine) {
                         flag(node);
                     } else {
-                        take_turn(node->x, node->y);
+                        take_turn(node);
                     }
                 }
                 return true;
@@ -372,7 +383,7 @@ namespace minesweeper::solver {
             std::set<Node*> covered;
             for (auto x = 0; x < game.width; x++) {
                 for (auto y = 0; y < game.height; y++) {
-                    if (state[x][y].value == Minesweeper::COVERED) {
+                    if (state[x][y].value() == Minesweeper::COVERED) {
                         covered.insert(&state[x][y]);
                     }
                 }
@@ -388,11 +399,11 @@ namespace minesweeper::solver {
                         continue;
                     }
 
-                    if (try_advanced_solve(node1->covered_adjacent(), node1->adjacent_mines_left, node2->covered_adjacent(), node2->adjacent_mines_left)) {
+                    if (try_advanced_solve(node1->adjacent_covered(), node1->adjacent_mines_left(), node2->adjacent_covered(), node2->adjacent_mines_left())) {
                         return true;
                     }
                 }
-                if (try_advanced_solve(node1->covered_adjacent(), node1->adjacent_mines_left, all_covered(), game.mines_left())) {
+                if (try_advanced_solve(node1->adjacent_covered(), node1->adjacent_mines_left(), all_covered(), game.mines_left())) {
                     return true;
                 }
             }
@@ -407,11 +418,11 @@ namespace minesweeper::solver {
             auto covered = all_covered();
             Node* least_probable = *covered.begin();
             for (auto node : covered) {
-                if (node->mine_probability < least_probable->mine_probability) {
+                if (node->mine_probability() < least_probable->mine_probability()) {
                     least_probable = node;
                 }
             }
-            return take_turn(least_probable->x, least_probable->y);
+            return take_turn(least_probable);
         }
 
         void check_game_state(Minesweeper::GameState game_state) {
@@ -434,7 +445,7 @@ namespace minesweeper::solver {
             auto x = this->game.width/2;
             auto y = this->game.height/2;
             Minesweeper::GameState game_state;
-            game_state = take_turn(x, y);
+            game_state = take_turn(&state[x][y]);
             check_game_state(game_state);
 
             while (true) {
@@ -445,8 +456,8 @@ namespace minesweeper::solver {
                 auto edge_covered = get_edge_covered();
                 auto safe_tiles = basic_safe(edge_covered);
                 for (auto tile : safe_tiles) {
-                    if (tile->value == Minesweeper::COVERED) {
-                        game_state = take_turn(tile->x, tile->y);
+                    if (tile->value() == Minesweeper::COVERED) {
+                        game_state = take_turn(tile);
                     }
                 }
                 check_game_state(game_state);
@@ -471,7 +482,7 @@ namespace minesweeper::solver {
                         printf("\x1b[32m");
                     }
 
-                    auto value = this->state[x][y].value;
+                    auto value = this->state[x][y].value();
                     switch (value) {
                         case Minesweeper::MINE:
                             printf("* ");
@@ -502,7 +513,7 @@ namespace minesweeper::solver {
         void print_probability() {
             for (auto y = 0; y < this->game.height; y++) {
                 for (auto x = 0; x < this->game.width; x++) {
-                    printf("%5.2f ", boost::rational_cast<double>(this->state[x][y].mine_probability));
+                    printf("%5.2f ", boost::rational_cast<double>(this->state[x][y].mine_probability()));
                 }
                 printf("\n");
             }

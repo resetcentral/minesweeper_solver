@@ -91,7 +91,7 @@ namespace minesweeper::solver {
         return _adjacent_mines_left;
     }
 
-    bool Node::edge_covered() {
+    bool Node::covered_edge() {
         if (_value == Minesweeper::COVERED) {
             for (auto node : _adjacent) {
                 if (node->value() <= 8) {
@@ -102,7 +102,7 @@ namespace minesweeper::solver {
         return false;
     }
 
-    bool Node::edge_num() {
+    bool Node::number_edge() {
         if (_value <= 8) {
             for (auto node : _adjacent) {
                 if (node->value() == Minesweeper::COVERED) {
@@ -129,20 +129,20 @@ namespace minesweeper::solver {
         
         public:
         void calculate_probability() {
-            auto edge_covered = get_edge_covered();
+            auto covered_edge = get_edge_covered();
             auto covered = all_covered();
 
             boost::rational<unsigned int> edge_probability {};
-            for (auto node : edge_covered) {
+            for (auto node : covered_edge) {
                 edge_probability += node->mine_probability();
             }
 
             auto non_edge_sum = boost::rational<unsigned int>{ game.mines_left() } - edge_probability;
-            auto non_edge_covered_count = covered.size() - edge_covered.size();
+            auto non_edge_covered_count = covered.size() - covered_edge.size();
             if (non_edge_covered_count > 0) {
                 auto non_edge_probability = non_edge_sum / boost::rational<unsigned int>{ non_edge_covered_count };
                 for (auto node : covered) {
-                    if (!edge_covered.contains(node)) {
+                    if (!covered_edge.contains(node)) {
                         node->set_mine_probability(non_edge_probability);
                     }
                 }
@@ -214,7 +214,7 @@ namespace minesweeper::solver {
             std::set<Node*> edge_set;
             for (auto x = 0; x < this->game.width; x++) {
                 for (auto y = 0; y < this->game.height; y++) {
-                    if (this->state[x][y].edge_num()) {
+                    if (this->state[x][y].number_edge()) {
                         edge_set.insert(&this->state[x][y]);
                     }
                 }
@@ -227,7 +227,7 @@ namespace minesweeper::solver {
             std::set<Node*> edge_set;
             for (auto x = 0; x < this->game.width; x++) {
                 for (auto y = 0; y < this->game.height; y++) {
-                    if (this->state[x][y].edge_covered()) {
+                    if (this->state[x][y].covered_edge()) {
                         edge_set.insert(&this->state[x][y]);
                     }
                 }
@@ -258,9 +258,9 @@ namespace minesweeper::solver {
             }
         }
 
-        std::vector<Node*> basic_safe(std::set<Node*> edge_covered) {
+        std::vector<Node*> basic_safe(std::set<Node*> covered_edge) {
             std::vector<Node*> safe_tiles{};
-            for (auto node : edge_covered) {
+            for (auto node : covered_edge) {
                 if (node->safe()) {
                     safe_tiles.push_back(node);
                 }
@@ -453,8 +453,8 @@ namespace minesweeper::solver {
                 auto edge_nums = get_edge_nums();
                 basic_flag(edge_nums);
 
-                auto edge_covered = get_edge_covered();
-                auto safe_tiles = basic_safe(edge_covered);
+                auto covered_edge = get_edge_covered();
+                auto safe_tiles = basic_safe(covered_edge);
                 for (auto tile : safe_tiles) {
                     if (tile->value() == Minesweeper::COVERED) {
                         game_state = take_turn(tile);

@@ -76,9 +76,9 @@ namespace minesweeper::solver {
 
         unsigned int adjacent_mines_left();
 
-        bool edge_covered();
+        bool covered_edge();
 
-        bool edge_num();
+        bool number_edge();
 
         bool safe();
     };

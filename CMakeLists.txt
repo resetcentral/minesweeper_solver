@@ -77,26 +77,37 @@ target_link_libraries(
 )
 
 add_library(
-  solver
-  include/solver.hpp
-  lib/solver.cpp
+  node
+  include/solver/node.hpp
+  lib/solver/node.cpp
 )
 target_include_directories(generator PUBLIC include/)
 target_link_libraries(
-  solver
+  node
   minesweeper
   Boost::headers
 )
 
 add_executable(
-  solver_test
-  src/tests/solver.cpp
+  solver_choose_test
+  src/tests/solver/choose.cpp
 )
-target_include_directories(solver_test PUBLIC include/)
+target_include_directories(solver_choose_test PUBLIC include/)
+target_link_libraries(
+  solver_choose_test
+  GTest::gtest_main
+  gmock_main
+)
+
+add_executable(
+  solver_node_test
+  src/tests/solver/node.cpp
+)
+target_include_directories(solver_node_test PUBLIC include/)
 
 target_link_libraries(
-  solver_test
-  solver
+  solver_node_test
+  node
   GTest::gtest_main
   gmock_main
 )
@@ -104,4 +115,5 @@ target_link_libraries(
 include(GoogleTest)
 gtest_discover_tests(generator)
 gtest_discover_tests(minesweeper_test)
-gtest_discover_tests(solver_test)
+gtest_discover_tests(solver_choose_test)
+gtest_discover_tests(solver_node_test)

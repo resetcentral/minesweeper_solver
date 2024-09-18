@@ -113,7 +113,11 @@ namespace minesweeper::solver {
         return false;
     }
 
-    bool Node::safe() {
+    bool Node::covered_safe() {
+        if (_value != Minesweeper::COVERED) {
+            return false;
+        }
+
         for (auto adj_node: _adjacent) {
             if (adj_node->value() <= 8 && adj_node->adjacent_mines_left() == 0) {
                 return true;
@@ -261,7 +265,7 @@ namespace minesweeper::solver {
         std::vector<Node*> basic_safe(std::set<Node*> covered_edge) {
             std::vector<Node*> safe_tiles{};
             for (auto node : covered_edge) {
-                if (node->safe()) {
+                if (node->covered_safe()) {
                     safe_tiles.push_back(node);
                 }
             }

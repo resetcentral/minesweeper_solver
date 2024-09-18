@@ -80,6 +80,6 @@ namespace minesweeper::solver {
 
         bool number_edge();
 
-        bool safe();
+        bool covered_safe();
     };
 }

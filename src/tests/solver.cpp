@@ -62,6 +62,9 @@ class NodeTest : public ::testing::Test {
                 if (y >= 1) {
                     nodes[x][y].add_adjacent(&nodes[x][y-1]);
                 }
+                if (x < 2 && y >= 1) {
+                    nodes[x][y].add_adjacent(&nodes[x+1][y-1]);
+                }
                 if (x < 2) {
                     nodes[x][y].add_adjacent(&nodes[x+1][y]);
                 }
@@ -80,6 +83,18 @@ class NodeTest : public ::testing::Test {
         
     }
 };
+
+TEST_F(NodeTest, Setup) {
+    EXPECT_EQ(nodes[0][0].adjacent().size(), 3);
+    EXPECT_EQ(nodes[0][1].adjacent().size(), 5);
+    EXPECT_EQ(nodes[0][2].adjacent().size(), 3);
+    EXPECT_EQ(nodes[1][0].adjacent().size(), 5);
+    EXPECT_EQ(nodes[1][1].adjacent().size(), 8);
+    EXPECT_EQ(nodes[1][2].adjacent().size(), 5);
+    EXPECT_EQ(nodes[2][0].adjacent().size(), 3);
+    EXPECT_EQ(nodes[2][1].adjacent().size(), 5);
+    EXPECT_EQ(nodes[2][2].adjacent().size(), 3);
+}
 
 TEST_F(NodeTest, SetValueCovered) {
     nodes[1][1].set_value(Minesweeper::COVERED);
@@ -118,4 +133,31 @@ TEST_F(NodeTest, SetValueNumAdjacentFlag) {
     nodes[1][1].set_value(3);
 
     EXPECT_EQ(nodes[1][1].adjacent_mines_left(), 1);
+}
+
+TEST_F(NodeTest, AdjacentCovered) {
+    nodes[1][0].set_value(3);
+    nodes[0][1].set_value(2);
+    nodes[1][2].set_value(5);
+
+    EXPECT_THAT(nodes[0][0].adjacent_covered(), 
+        UnorderedElementsAre(&nodes[1][1]));
+
+    EXPECT_THAT(nodes[2][0].adjacent_covered(), 
+        UnorderedElementsAre(&nodes[1][1], &nodes[2][1]));
+
+    EXPECT_THAT(nodes[1][1].adjacent_covered(), 
+        UnorderedElementsAre(&nodes[0][0], &nodes[0][2], &nodes[2][0], &nodes[2][1], &nodes[2][2]));
+}
+
+TEST_F(NodeTest, AdjacentCoveredCount) {
+    nodes[1][0].set_value(3);
+    nodes[0][1].set_value(2);
+    nodes[1][2].set_value(5);
+
+    EXPECT_EQ(nodes[0][0].adjacent_covered_count(), 1);
+
+    EXPECT_EQ(nodes[2][0].adjacent_covered_count(), 2);
+
+    EXPECT_EQ(nodes[1][1].adjacent_covered_count(), 5);
 }

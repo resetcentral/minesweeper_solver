@@ -131,35 +131,38 @@ class MinesweeperSolver {
     Minesweeper game;
     std::vector<std::vector<Node>> state;
     std::pair<unsigned int, unsigned int> last_clicked;
-
+    
+    public:
     void calculate_probability() {
-        auto choose_matrix = precomputed_choose<8,8>();
-        // for (auto i = 0; i <= 8; i++) {
-        //     for (auto j = 0; j <= 8; j++) {
-        //         printf("%4d", choose_matrix[i][j]);
-        //     }
-        //     printf("\n");
-        // }
-        boost::rational<unsigned int> base_prob {this->game.mines_left(), this->game.covered_tiles_count()};
+        auto edge_covered = get_edge_covered();
+        auto covered = all_covered();
 
-        for (auto x = 0; x < this->game.width; x++) {
-            for (auto y = 0; y < this->game.height; y++) {                
-                switch (this->game.get_tile(x, y)) {
-                    case Minesweeper::COVERED:
-                        this->state[x][y].mine_probability = base_prob;
-                        break;
-                    case Minesweeper::FLAG:
-                        this->state[x][y].mine_probability = 1;
-                        break;
-                    default:
-                        this->state[x][y].mine_probability = 0;
-                        break;
-                };
+        boost::rational<unsigned int> edge_probability {};
+        for (auto node : edge_covered) {
+            edge_probability += node->mine_probability;
+        }
+
+        // for (auto node : edge_nums) {
+        //     mine_sum += node->adjacent_mines_left;
+        //     for (auto adj_node : node->covered_adjacent()) {
+        //         covered.erase(adj_node);
+        //         edge_probability += adj_node->mine_probability;
+        //     }
+        // }
+
+        auto non_edge_sum = boost::rational<unsigned int>{ game.mines_left() } - edge_probability;
+        auto non_edge_covered_count = covered.size() - edge_covered.size();
+        if (non_edge_covered_count > 0) {
+            auto non_edge_probability = non_edge_sum / boost::rational<unsigned int>{ non_edge_covered_count };
+            for (auto node : covered) {
+                if (!edge_covered.contains(node)) {
+                    node->mine_probability = non_edge_probability;
+                }
             }
         }
     }
 
-    public:
+
     MinesweeperSolver(Minesweeper game)
         : game { game } {
             auto board = game.get_board();
@@ -209,9 +212,10 @@ class MinesweeperSolver {
     }
 
     Minesweeper::GameState take_turn(const unsigned int x, const unsigned int y) {
+        last_clicked = std::pair {x, y};
+        view_state();
         auto game_state = game.uncover_tile(x, y);
         update_state(x, y);
-        last_clicked = std::pair {x, y};
         view_state();
 
         return game_state;
@@ -245,6 +249,7 @@ class MinesweeperSolver {
 
     void flag(Node* node) {
         last_clicked = std::pair {node->x, node->y};
+        view_state();
         game.toggle_flag(node->x, node->y);
         node->set_value(Minesweeper::FLAG);
         view_state();
@@ -415,26 +420,46 @@ class MinesweeperSolver {
         return false;
     }
 
+    Minesweeper::GameState pick_least_probable() {
+        // print_probability();
+        calculate_probability();
+        // print_probability();
+
+        auto covered = all_covered();
+        Node* least_probable = *covered.begin();
+        for (auto node : covered) {
+            if (node->mine_probability < least_probable->mine_probability) {
+                least_probable = node;
+            }
+        }
+        return take_turn(least_probable->x, least_probable->y);
+    }
+
+    void check_game_state(Minesweeper::GameState game_state) {
+        if (game_state == Minesweeper::GameState::Lose) {
+            throw std::logic_error("Oops! Clicked on a mine");
+        } else if (game_state == Minesweeper::GameState::Win) {
+            for (auto node : all_covered()) {
+                flag(node);
+            }
+            printf("Minefield Swept!\n");
+            exit(0);
+        }
+    }
+
+    const char* mode = "None";
+
     void solve() {
         view_state();
 
         auto x = this->game.width/2;
         auto y = this->game.height/2;
         Minesweeper::GameState game_state;
-        while (true) {
-            game_state = take_turn(x, y);
-            if (game_state == Minesweeper::GameState::Lose) {
-                throw std::logic_error("Oops! Clicked on a mine");
-            }
-
-            if (game.get_tile(x, y) == 0) {
-                break;
-            }
-            x++;
-            y++;
-        }
+        game_state = take_turn(x, y);
+        check_game_state(game_state);
 
         while (true) {
+            mode = "Basic";
             auto edge_nums = get_edge_nums();
             basic_flag(edge_nums);
 
@@ -445,20 +470,14 @@ class MinesweeperSolver {
                     game_state = take_turn(tile->x, tile->y);
                 }
             }
-
-            view_state();
-            if (game_state == Minesweeper::GameState::Win) {
-                printf("Minefield Swept!\n");
-                return;
-            }
+            check_game_state(game_state);
 
             if (safe_tiles.size() == 0) {
-                printf("Got stuck :(\n");
+                mode = "Advanced";
                 if (!advanced_solve(edge_nums)) {
-                    printf("Mines left: %d\n", game.mines_left());
-                    printf("Got really stuck :(((((\n");
-                    print_probability();
-                    return;
+                    mode = "Most probable (this might blow up)";
+                    game_state = pick_least_probable();
+                    check_game_state(game_state);
                 }
             }
         }
@@ -472,6 +491,7 @@ class MinesweeperSolver {
 
     void view_state() {
         system("clear");
+        printf("Solve Algorithm in Use: %s\n\n", mode);
         for (auto y = 0; y < this->game.height; y++) {
             for (auto x = 0; x < this->game.width; x++) {
                 if (x == last_clicked.first && y == last_clicked.second) {
@@ -503,7 +523,7 @@ class MinesweeperSolver {
             printf("\n");
         }
         printf("\n");
-        // std::this_thread::sleep_for(std::chrono::seconds(1));
+        std::this_thread::sleep_for(std::chrono::milliseconds(250));
     }
 
     void print_probability() {
@@ -513,6 +533,8 @@ class MinesweeperSolver {
             }
             printf("\n");
         }
+        printf("\n");
+        std::this_thread::sleep_for(std::chrono::seconds(5));
     }
 };
 
@@ -521,7 +543,7 @@ int main() {
 
     // Create & Run solver
     // Print state as we go
-    Minesweeper game(16, 16, 40);
+    Minesweeper game(30, 16, 99);
     MinesweeperSolver solver(game);
     solver.solve();
 }

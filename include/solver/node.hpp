@@ -7,7 +7,7 @@ namespace minesweeper::solver {
 
     class Node {
         std::pair<unsigned int, unsigned int> _coord;
-        unsigned int _value = Minesweeper::COVERED;
+        unsigned short _value = Minesweeper::COVERED;
         std::set<Node*> _adjacent{};
         boost::rational<unsigned int> _mine_probability{};
         unsigned int _adjacent_mines_left = 0;
@@ -15,30 +15,30 @@ namespace minesweeper::solver {
     public:
         Node(unsigned int x, unsigned int y);
 
-        std::pair<unsigned int, unsigned int> coord();
+        const std::pair<unsigned int, unsigned int>& coord() const;
 
-        unsigned int value();
+        unsigned short value() const;
 
-        void set_value(unsigned int value);
+        void set_value(const unsigned int short);
 
-        const std::set<Node*>& adjacent();
+        const std::set<Node*>& adjacent() const;
 
-        std::set<Node*> adjacent_covered();
+        std::set<Node*> adjacent_covered() const;
 
-        unsigned int adjacent_covered_count();
+        unsigned int adjacent_covered_count() const;
 
         void add_adjacent(Node* node);
 
-        boost::rational<unsigned int> mine_probability();
+        boost::rational<unsigned int> mine_probability() const;
 
         void set_mine_probability(boost::rational<unsigned int> mp);
 
-        unsigned int adjacent_mines_left();
+        unsigned int adjacent_mines_left() const;
 
-        bool covered_edge();
+        bool covered_edge() const;
 
-        bool number_edge();
+        bool number_edge() const;
 
-        bool covered_safe();
+        bool covered_safe() const;
     };
 }

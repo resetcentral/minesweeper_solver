@@ -43,7 +43,7 @@ namespace minesweeper {
         return this->flags_placed;
     }
 
-    const Minefield& Minesweeper::get_board() noexcept {
+    const Minefield& Minesweeper::get_field() const noexcept {
         return this->visible;
     }
 

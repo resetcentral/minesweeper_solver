@@ -45,11 +45,11 @@ namespace minesweeper {
 
         unsigned short get_tile(const int x, const int y);
 
+        const Minefield& get_field() const noexcept;
+
         unsigned int covered_tiles_count() noexcept;
 
         unsigned int flags_placed_count() noexcept;
-
-        const Minefield& get_board() noexcept;
 
         int mines_left() noexcept;
 

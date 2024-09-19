@@ -9,7 +9,7 @@ namespace minesweeper::solver {
         Node* _selected;
 
     public:
-        SolverState(const Minefield& field);
+        SolverState(const Minefield& minefield);
 
         unsigned int width();
 
@@ -21,7 +21,7 @@ namespace minesweeper::solver {
 
         std::set<Node*> covered_edge();
 
-        void update(Node* node, const Minefield* minefield);
+        void update(Node* node, const Minefield& minefield);
 
         const Node& selected();
 

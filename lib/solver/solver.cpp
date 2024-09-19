@@ -10,13 +10,16 @@
 namespace minesweeper::solver {
     using minesweeper::Minesweeper;
 
-    SolverState::SolverState(const Minefield& field) {
+    SolverState::SolverState(const Minefield& minefield) {
+        if (minefield.size() == 0 || minefield[0].size() == 0) {
+            throw std::invalid_argument("Solver state cannot have zero width or height.");
+        }
         // Set node values
-        for (auto x = 0; x < field.size(); x++) {
+        for (auto x = 0; x < minefield.size(); x++) {
             std::vector<Node> column;
-            for (auto y = 0; y < field[x].size(); y++) {
+            for (auto y = 0; y < minefield[x].size(); y++) {
                 auto n = Node(x, y);
-                n.set_value(field[x][y]);
+                n.set_value(minefield[x][y]);
                 column.push_back(n);
             }
             state.push_back(column);
@@ -24,8 +27,8 @@ namespace minesweeper::solver {
 
         // Link adjacent nodes
         auto width = state.size();
+        auto height = state[0].size();
         for (auto x = 0; x < width; x++) {
-            auto height = state[x].size();
             bool link_left = x > 0;
             for (auto y = 0; y < height; y++) {
                 bool link_right = x < width-1;
@@ -51,11 +54,7 @@ namespace minesweeper::solver {
     }
 
     unsigned int SolverState::height() {
-        if (width() > 0) {
-            return state[0].size();
-        } else {
-            return 0;
-        }
+        return state[0].size();
     }
 
     std::set<Node*> SolverState::covered() {
@@ -94,9 +93,9 @@ namespace minesweeper::solver {
         return edge_set;
     }
 
-    void SolverState::update(Node* node, const minesweeper::Minefield* minefield) {
+    void SolverState::update(Node* node, const minesweeper::Minefield& minefield) {
         auto [x, y] = node->coord();
-        auto value = (*minefield)[x][y];
+        auto value = minefield[x][y];
 
         node->set_value(value);
         if (value == 0) {
@@ -287,7 +286,7 @@ namespace minesweeper::solver {
 
 
     // Least probable
-    void calculate_probability(SolverState state, int mines_left) {
+    void ProbableSolver::calculate_probability(SolverState state, int mines_left) {
         auto covered_edge_nodes = state.covered_edge();
         auto covered_nodes = state.covered();
 
@@ -353,7 +352,7 @@ namespace minesweeper::solver {
         } else {
             game_state = game.uncover_tile(x, y);
         }
-        state.update(node, &game.get_field());
+        state.update(node, game.get_field());
         logger.log(state);
 
         check_game_state(game_state);

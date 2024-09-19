@@ -49,11 +49,11 @@ namespace minesweeper::solver {
         }
     }
 
-    unsigned int SolverState::width() {
+    unsigned int SolverState::width() const {
         return state.size();
     }
 
-    unsigned int SolverState::height() {
+    unsigned int SolverState::height() const {
         return state[0].size();
     }
 
@@ -107,7 +107,7 @@ namespace minesweeper::solver {
         }
     }
 
-    const Node& SolverState::selected() {
+    const Node& SolverState::selected() const {
         return *_selected;
     }
 

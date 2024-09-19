@@ -10,405 +10,412 @@
 namespace minesweeper::solver {
     using minesweeper::Minesweeper;
 
-    class MinesweeperSolver {
-        Minesweeper game;
-        std::vector<std::vector<Node>> state;
-        std::pair<unsigned int, unsigned int> last_clicked;
+    SolverState::SolverState(const Minefield& field) {
+        // Set node values
+        for (auto x = 0; x < field.size(); x++) {
+            std::vector<Node> column;
+            for (auto y = 0; y < field[x].size(); y++) {
+                auto n = Node(x, y);
+                n.set_value(field[x][y]);
+                column.push_back(n);
+            }
+            state.push_back(column);
+        }
+
+        // Link adjacent nodes
+        auto width = state.size();
+        for (auto x = 0; x < width; x++) {
+            auto height = state[x].size();
+            bool link_left = x > 0;
+            for (auto y = 0; y < height; y++) {
+                bool link_right = x < width-1;
+                bool link_down = y < height-1;
+                if (link_right) {
+                    state[x][y].add_adjacent(&state[x+1][y]);
+                }
+                if (link_down) {
+                    state[x][y].add_adjacent(&state[x][y+1]);
+                }
+                if (link_right && link_down) {
+                    state[x][y].add_adjacent(&state[x+1][y+1]);
+                }
+                if (link_left && link_down) {
+                    state[x][y].add_adjacent(&state[x-1][y+1]);
+                }
+            }
+        }
+    }
+
+    unsigned int SolverState::width() {
+        return state.size();
+    }
+
+    unsigned int SolverState::height() {
+        if (width() > 0) {
+            return state[0].size();
+        } else {
+            return 0;
+        }
+    }
+
+    std::set<Node*> SolverState::covered() {
+        std::set<Node*> covered;
+        for (auto x = 0; x < state.size(); x++) {
+            for (auto y = 0; y < state[x].size(); y++) {
+                if (state[x][y].value() == Minesweeper::COVERED) {
+                    covered.insert(&state[x][y]);
+                }
+            }
+        }
+        return covered;
+    }
+
+    std::set<Node*> SolverState::number_edge() {
+        std::set<Node*> edge_set;
+        for (auto x = 0; x < state.size(); x++) {
+            for (auto y = 0; y < state[x].size(); y++) {
+                if (this->state[x][y].number_edge()) {
+                    edge_set.insert(&state[x][y]);
+                }
+            }
+        }
+        return edge_set;
+    }
+
+    std::set<Node*> SolverState::covered_edge() {
+        std::set<Node*> edge_set;
+        for (auto x = 0; x < state.size(); x++) {
+            for (auto y = 0; y < state[x].size(); y++) {
+                if (state[x][y].covered_edge()) {
+                    edge_set.insert(&state[x][y]);
+                }
+            }
+        }
+        return edge_set;
+    }
+
+    void SolverState::update(Node* node, const minesweeper::Minefield* minefield) {
+        auto [x, y] = node->coord();
+        auto value = (*minefield)[x][y];
+
+        node->set_value(value);
+        if (value == 0) {
+            for (auto adjacent_tile : node->adjacent()) {
+                if (adjacent_tile->value() == Minesweeper::COVERED) {
+                    update(adjacent_tile, minefield);
+                }
+            }
+        }
+    }
+
+    const Node& SolverState::selected() {
+        return *_selected;
+    }
+
+    void SolverState::set_selected(Node* node) {
+        _selected = node;
+    }
+
+    Node* SolverState::get_node(const unsigned int x, const unsigned int y) {
+        return &state[x][y];
+    }
+
+    // State logger
+    void StateLogger::set_mode(const char* mode) {
+        _mode = mode;
+    }
+
+    void StateLogger::log(SolverState state) {
+        system("clear");
+        printf("Solve Mode in Use: %s\n\n", _mode);
+        auto selected_coords = state.selected().coord();
+        for (auto y = 0; y < state.height(); y++) {
+            for (auto x = 0; x < state.width(); x++) {
+                if (x == selected_coords.first && y == selected_coords.second) {
+                    printf("\x1b[32m"); // Green
+                }
+
+                auto value = state.get_node(x, y)->value();
+                switch (value) {
+                    case Minesweeper::MINE:
+                        printf("* ");
+                        break;
+                    case Minesweeper::FLAG:
+                        printf("f ");
+                        break;
+                    case Minesweeper::COVERED:
+                        printf("O ");
+                        break;
+                    case 0:
+                        printf("  ");
+                        break;
+                    default:
+                        printf("%d ", value);
+                }
+
+                if (x == selected_coords.first && y == selected_coords.second) {
+                    printf("\x1b[0m"); // Reset color
+                }
+            }
+            printf("\n");
+        }
+        printf("\n");
+        // std::this_thread::sleep_for(std::chrono::milliseconds(250)); TODO move this
+    }
+    
+    // BasicSolver
+    std::set<Node*> BasicSolver::flaggable(SolverState state) {
+        std::set<Node*> flaggable_nodes;
+
+        auto num_edge = state.number_edge();
+        for (auto node : num_edge) {
+            if (node->adjacent_covered_count() == node->adjacent_mines_left()) {
+                for (auto adj_node: node->adjacent()) {
+                    if (adj_node->value() == Minesweeper::COVERED) {
+                        flaggable_nodes.insert(adj_node);
+                    }
+                }
+            }
+        }
+        return flaggable_nodes;
+    }
+
+    std::set<Node*> BasicSolver::safe(SolverState state) {
+        std::set<Node*> safe_nodes{};
+
+        auto covered_edge = state.covered_edge();
+        for (auto node : covered_edge) {
+            if (node->covered_safe()) {
+                safe_nodes.insert(node);
+            }
+        }
+        return safe_nodes;
+    }
+
+    
+    // Advanced Solver
+    std::set<std::pair<Node*, bool>> AdvancedSolver::compare_sets(std::set<Node*> set1, int set1_mines, std::set<Node*> set2, int set2_mines) {
+        std::set<std::pair<Node*, bool>> definitive;
+
+        std::array<std::set<Node*>, 3> segments;
+        std::set_intersection(set1.begin(), set1.end(), set2.begin(), set2.end(), std::inserter(segments[1], segments[1].begin()));
+        if (!segments[1].empty()) {
+            std::set_difference(set1.begin(), set1.end(), set2.begin(), set2.end(), std::inserter(segments[0], segments[0].begin()));
+            std::set_difference(set2.begin(), set2.end(), set1.begin(), set1.end(), std::inserter(segments[2], segments[2].begin()));
+
+            std::array<std::size_t, 3> counts{};
+            for (auto i = 0; i < segments.size(); i++) {
+                counts[i] = segments[i].size();
+            }
+
+            if (counts[0] > 8 || counts[2] > 8) {
+                return definitive;
+            }
+
+            auto running_total = 0;
+            std::array<int, 3> choose{ set1_mines, 0, set2_mines };
+            std::array<int, 3> picked{};
+            auto choose_table = choose_matrix<8,8>();
+            while (choose[0] >= 0 && choose[2] >= 0) {
+                auto total = 0;
+                for (auto i = 0; i < 3; i++) {
+                    total += choose_table[counts[i]][choose[i]];
+                }
+                for (auto i = 0; i < 3; i++) {
+                    picked[i] += choose[i] * total;
+                }
+                running_total += total;
+                choose[0]--;
+                choose[1]++;
+                choose[2]--;
+            }
+
+            for (auto i = 0; i < 3; i++) {
+                auto segment = segments[i];
+                if (picked[i] == 0) {
+                    for (auto node : segment) {
+                        definitive.insert(std::pair{node, false});
+                    }
+                } else if (counts[i] > 0) {
+                    for (auto node : segment) {
+                        boost::rational<unsigned int> probability{ picked[i] / counts[i] , running_total };
+                        if (probability.denominator() < node->mine_probability().denominator()) {
+                            node->set_mine_probability(probability);
+                        }
+                        if (probability == 1) {
+                            definitive.insert(std::pair{node, true});
+                        }
+                    }
+                }
+            }
+        }
         
-        public:
-        void calculate_probability() {
-            auto covered_edge = get_edge_covered();
-            auto covered = all_covered();
+        return definitive;
+    }
 
-            boost::rational<unsigned int> edge_probability {};
-            for (auto node : covered_edge) {
-                edge_probability += node->mine_probability();
-            }
+    std::set<std::pair<Node*, bool>> AdvancedSolver::solve(SolverState state, int mines_left) {
+        std::set<std::pair<Node*, bool>> definitive;
 
-            auto non_edge_sum = boost::rational<unsigned int>{ game.mines_left() } - edge_probability;
-            auto non_edge_covered_count = covered.size() - covered_edge.size();
-            if (non_edge_covered_count > 0) {
-                auto non_edge_probability = non_edge_sum / boost::rational<unsigned int>{ non_edge_covered_count };
-                for (auto node : covered) {
-                    if (!covered_edge.contains(node)) {
-                        node->set_mine_probability(non_edge_probability);
-                    }
-                }
-            }
-        }
-
-
-        MinesweeperSolver(Minesweeper game)
-            : game { game } {
-                auto board = game.get_board();
-                boost::rational<unsigned int> default_probability { game.mines_left(), game.covered_tiles_count()};
-                for (auto x = 0; x < game.width; x++) {
-                    std::vector<Node> col;
-                    for (auto y = 0; y < game.height; y++) {
-                        auto n = Node(x, y);
-                        n.set_value(board[x][y]);
-                        col.push_back(n);
-                    }
-                    this->state.push_back(col);
+        auto num_edge = state.number_edge();
+        for (auto node1 : num_edge) {
+            for (auto node2 : num_edge) {
+                if (node1 == node2) {
+                    continue;
                 }
 
-                for (auto x = 0; x < game.width; x++) {
-                    bool link_left = x > 0;
-                    for (auto y = 0; y < game.height; y++) {
-                        bool link_right = x < game.width-1;
-                        bool link_down = y < game.height-1;
-                        if (link_right) {
-                            this->state[x][y].add_adjacent(&this->state[x+1][y]);
-                        }
-                        if (link_down) {
-                            this->state[x][y].add_adjacent(&this->state[x][y+1]);
-                        }
-                        if (link_right && link_down) {
-                            this->state[x][y].add_adjacent(&this->state[x+1][y+1]);
-                        }
-                        if (link_left && link_down) {
-                            this->state[x][y].add_adjacent(&this->state[x-1][y+1]);
-                        }
-                    }
-                }
-            }
-        
-        void update_state(Node* node) {
-            auto [x, y] = node->coord();
-            auto tile = game.get_tile(x, y);
-
-            node->set_value(tile);
-            if (tile == 0) {
-                for (auto adjacent_tile : node->adjacent()) {
-                    if (adjacent_tile->value() == Minesweeper::COVERED) {
-                        update_state(adjacent_tile);
-                    }
-                }
-            }
-        }
-
-        Minesweeper::GameState take_turn(Node* node) {
-            last_clicked = node->coord();
-            view_state();
-            auto [x, y] = node->coord();
-            auto game_state = game.uncover_tile(x, y);
-            update_state(node);
-            view_state();
-
-            return game_state;
-        }
-
-        std::set<Node*> get_edge_nums() {
-            std::set<Node*> edge_set;
-            for (auto x = 0; x < this->game.width; x++) {
-                for (auto y = 0; y < this->game.height; y++) {
-                    if (this->state[x][y].number_edge()) {
-                        edge_set.insert(&this->state[x][y]);
-                    }
-                }
-            }
-
-            return edge_set;
-        }
-
-        std::set<Node*> get_edge_covered() {
-            std::set<Node*> edge_set;
-            for (auto x = 0; x < this->game.width; x++) {
-                for (auto y = 0; y < this->game.height; y++) {
-                    if (this->state[x][y].covered_edge()) {
-                        edge_set.insert(&this->state[x][y]);
-                    }
-                }
-            }
-
-            return edge_set;
-        }
-
-        void flag(Node* node) {
-            last_clicked = node->coord();
-            view_state();
-            auto [x, y] = node->coord();
-            game.toggle_flag(x, y);
-            node->set_value(Minesweeper::FLAG);
-            view_state();
-        }
-
-        void basic_flag(std::set<Node*> edge_nums) {
-            for (auto node : edge_nums) {
-                auto adjacent_covered = node->adjacent_covered_count();
-                if (adjacent_covered == node->adjacent_mines_left()) {
-                    for (auto adj_node: node->adjacent()) {
-                        if (adj_node->value() == Minesweeper::COVERED) {
-                            flag(adj_node);
-                        }
-                    }
-                }
-            }
-        }
-
-        std::vector<Node*> basic_safe(std::set<Node*> covered_edge) {
-            std::vector<Node*> safe_tiles{};
-            for (auto node : covered_edge) {
-                if (node->covered_safe()) {
-                    safe_tiles.push_back(node);
-                }
-            }
-
-            return safe_tiles;
-        }
-
-        std::vector<std::pair<Node*, bool>> compare_sets(std::set<Node*> set1, int set1_mines, std::set<Node*> set2, int set2_mines) {
-            std::vector<std::pair<Node*, bool>> definitive;
-
-            std::set<Node*> left, overlap, right;
-            std::set_intersection(set1.begin(), set1.end(), set2.begin(), set2.end(), std::inserter(overlap, overlap.begin()));
-            auto overlap_count = overlap.size();
-
-            if (overlap_count > 0) {
-                std::set_difference(set1.begin(), set1.end(), set2.begin(), set2.end(), std::inserter(left, left.begin()));
-                auto left_count = left.size();
-
-                std::set_difference(set2.begin(), set2.end(), set1.begin(), set1.end(), std::inserter(right, right.begin()));
-                auto right_count = right.size();
-
-                if (left_count > 8 || right_count > 8) {
+                definitive = compare_sets(node1->adjacent_covered(),
+                    node1->adjacent_mines_left(),
+                    node2->adjacent_covered(),
+                    node2->adjacent_mines_left()
+                );
+                if (definitive.size() > 0) {
                     return definitive;
                 }
-
-                auto left_choose = set1_mines;
-                auto overlap_choose = 0;
-                auto right_choose = set2_mines;
-
-                unsigned int left_picked, overlap_picked, right_picked, running_total;
-                left_picked = overlap_picked = right_picked = running_total = 0;
-
-                auto choose = choose_matrix<8,8>();
-                while (left_choose >= 0 && right_choose >= 0) {
-                    auto left_options = choose[left_count][left_choose];
-                    auto overlap_options = choose[overlap_count][overlap_choose];
-                    auto right_options = choose[right_count][right_choose];
-                    auto total = left_options * overlap_options * right_options;
-
-                    left_picked += left_choose * total;
-                    overlap_picked += overlap_choose * total;
-                    right_picked += right_choose * total;
-
-                    running_total += total;
-                    left_choose--;
-                    overlap_choose++;
-                    right_choose--;
-                }
-
-                if (left_picked == 0) {
-                    for (auto node : left) {
-                        definitive.push_back(std::pair{node, false});
-                    }
-                } else if (left_count > 0) {
-                    for (auto node : left) {
-                        boost::rational<unsigned int> probability{ left_picked / left_count , running_total };
-                        if (probability.denominator() < node->mine_probability().denominator()) {
-                            node->set_mine_probability(probability);
-                        }
-                        if (probability == 1) {
-                            definitive.push_back(std::pair{node, true});
-                        }
-                    }
-                }
-
-                if (overlap_picked == 0) {
-                    for (auto node : overlap) {
-                        definitive.push_back(std::pair{node, false});
-                    }
-                } else if (overlap_count > 0) {
-                    for (auto node : overlap) {
-                        boost::rational<unsigned int> probability{ overlap_picked / overlap_count , running_total };
-                        if (probability.denominator() < node->mine_probability().denominator()) {
-                            node->set_mine_probability(probability);
-                        }
-                        if (probability == 1) {
-                            definitive.push_back(std::pair{node, true});
-                        }
-                    }
-                }
-
-                if (right_picked == 0) {
-                    for (auto node : right) {
-                        definitive.push_back(std::pair{node, false});
-                    }
-                } else if (right_count > 0) {
-                    for (auto node : right) {
-                        boost::rational<unsigned int> probability{ right_picked / right_count , running_total };
-                        if (probability.denominator() < node->mine_probability().denominator()) {
-                            node->set_mine_probability(probability);
-                        }
-                        if (probability == 1) {
-                            definitive.push_back(std::pair{node, true});
-                        }
-                    }
-                }
             }
-            
-            return definitive;
-        }
-
-        bool try_advanced_solve(std::set<Node*> set1, int set1_mines, std::set<Node*> set2, int set2_mines) {
-            auto definitive = compare_sets(set1, set1_mines, set2, set2_mines);
+            definitive = compare_sets(
+                node1->adjacent_covered(),
+                node1->adjacent_mines_left(),
+                state.covered(),
+                mines_left
+            );
             if (definitive.size() > 0) {
-                for (auto item : definitive) {
-                    auto [node, mine] = item;
-                    if (mine) {
-                        flag(node);
-                    } else {
-                        take_turn(node);
-                    }
-                }
-                return true;
+                return definitive;
             }
-            return false;
+        }
+        return definitive;
+    }
+
+
+    // Least probable
+    void calculate_probability(SolverState state, int mines_left) {
+        auto covered_edge_nodes = state.covered_edge();
+        auto covered_nodes = state.covered();
+
+        auto number_edge_nodes = state.number_edge();
+        if (number_edge_nodes.size() == 1) {
+            boost::rational<unsigned int> probability{
+                (*number_edge_nodes.begin())->adjacent_mines_left(),
+                covered_edge_nodes.size()
+            };
+            for (auto node : covered_edge_nodes) {
+                node->set_mine_probability(probability);
+            }
+        };
+
+        boost::rational<unsigned int> edge_probability {};
+        for (auto node : covered_edge_nodes) {
+            edge_probability += node->mine_probability();
         }
 
-        std::set<Node*> all_covered() {
-            std::set<Node*> covered;
-            for (auto x = 0; x < game.width; x++) {
-                for (auto y = 0; y < game.height; y++) {
-                    if (state[x][y].value() == Minesweeper::COVERED) {
-                        covered.insert(&state[x][y]);
-                    }
+        auto non_edge_sum = boost::rational<unsigned int>{ mines_left } - edge_probability;
+        auto non_edge_covered_count = covered_nodes.size() - covered_edge_nodes.size();
+        if (non_edge_covered_count > 0) {
+            auto non_edge_probability = non_edge_sum / boost::rational<unsigned int>{ non_edge_covered_count };
+            for (auto node : covered_nodes) {
+                if (!covered_edge_nodes.contains(node)) {
+                    node->set_mine_probability(non_edge_probability);
                 }
             }
-
-            return covered;
         }
+    }
 
-        bool advanced_solve(std::set<Node*> edge_nums) {
-            for (auto node1 : edge_nums) {
-                for (auto node2 : edge_nums) {
-                    if (node1 == node2) {
-                        continue;
-                    }
+    Node* ProbableSolver::solve(SolverState state, int mines_left) {
+        calculate_probability(state, mines_left);
 
-                    if (try_advanced_solve(node1->adjacent_covered(), node1->adjacent_mines_left(), node2->adjacent_covered(), node2->adjacent_mines_left())) {
-                        return true;
-                    }
-                }
-                if (try_advanced_solve(node1->adjacent_covered(), node1->adjacent_mines_left(), all_covered(), game.mines_left())) {
-                    return true;
-                }
+        auto covered_nodes = state.covered();
+        Node* least_probable = *covered_nodes.begin();
+        for (auto node : covered_nodes) {
+            if (node->mine_probability() < least_probable->mine_probability()) {
+                least_probable = node;
             }
-            return false;
         }
+        return least_probable;
+    }
 
-        Minesweeper::GameState pick_least_probable() {
-            // print_probability();
-            calculate_probability();
-            // print_probability();
+    
+    // Main solver
+    MinesweeperSolver::MinesweeperSolver(Minesweeper game, StateLogger logger)
+        : game { game },
+          state { SolverState(game.get_field()) } {
 
-            auto covered = all_covered();
-            Node* least_probable = *covered.begin();
-            for (auto node : covered) {
-                if (node->mine_probability() < least_probable->mine_probability()) {
-                    least_probable = node;
-                }
-            }
-            return take_turn(least_probable);
+    }
+
+    void MinesweeperSolver::flag_or_uncover(Node* node, bool flag) {
+        Minesweeper::GameState game_state;
+
+        state.set_selected(node);
+        logger.log(state);
+
+        auto [x, y] = node->coord();
+        if (flag) {
+            game.toggle_flag(x, y);
+            game_state = Minesweeper::GameState::Continue;
+        } else {
+            game_state = game.uncover_tile(x, y);
         }
+        state.update(node, &game.get_field());
+        logger.log(state);
 
-        void check_game_state(Minesweeper::GameState game_state) {
-            if (game_state == Minesweeper::GameState::Lose) {
+        check_game_state(game_state);
+    }
+
+    void MinesweeperSolver::check_game_state(Minesweeper::GameState game_state) {
+        switch (game_state) {
+            case Minesweeper::GameState::Lose: {
                 throw std::logic_error("Oops! Clicked on a mine");
-            } else if (game_state == Minesweeper::GameState::Win) {
-                for (auto node : all_covered()) {
-                    flag(node);
+                break;
+            }
+            case Minesweeper::GameState::Win: {
+                for (auto node : state.covered()) {
+                    flag_or_uncover(node, true);
                 }
                 printf("Minefield Swept!\n");
                 exit(0);
             }
+            default:
+                return;
         }
+    }
 
-        const char* mode = "None";
+    void MinesweeperSolver::solve() {
+        BasicSolver basic;
+        AdvancedSolver advanced;
+        ProbableSolver probable;
 
-        void solve() {
-            view_state();
+        Minesweeper::GameState game_state;
+        auto x = game.width/2;
+        auto y = game.height/2;
+        flag_or_uncover(state.get_node(x, y), false);
 
-            auto x = this->game.width/2;
-            auto y = this->game.height/2;
-            Minesweeper::GameState game_state;
-            game_state = take_turn(&state[x][y]);
-            check_game_state(game_state);
+        while (true) {
+            logger.set_mode("Basic");
+            auto mine_nodes = basic.flaggable(state);
+            for (auto node : mine_nodes) {
+                flag_or_uncover(node, true);
+            }
 
-            while (true) {
-                mode = "Basic";
-                auto edge_nums = get_edge_nums();
-                basic_flag(edge_nums);
-
-                auto covered_edge = get_edge_covered();
-                auto safe_tiles = basic_safe(covered_edge);
-                for (auto tile : safe_tiles) {
-                    if (tile->value() == Minesweeper::COVERED) {
-                        game_state = take_turn(tile);
+            auto safe_nodes = basic.safe(state);
+            if (safe_nodes.size() > 0) {
+                for (auto node : safe_nodes) {
+                    if (node->value() == Minesweeper::COVERED) {
+                        flag_or_uncover(node, false);
                     }
                 }
-                check_game_state(game_state);
-
-                if (safe_tiles.size() == 0) {
-                    mode = "Advanced";
-                    if (!advanced_solve(edge_nums)) {
-                        mode = "Most probable (this might blow up)";
-                        game_state = pick_least_probable();
-                        check_game_state(game_state);
+            } else {
+                logger.set_mode("Advanced");
+                auto decisions = advanced.solve(state, game.mines_left());
+                if (decisions.size() > 0) {
+                    for (auto [node, flag] : decisions) {
+                        flag_or_uncover(node, flag);
                     }
+                } else {
+                    logger.set_mode("Most probable (this might blow up)");
+                    auto picked = probable.solve(state, game.mines_left());
+                    flag_or_uncover(picked, false);
                 }
             }
         }
-
-        void view_state() {
-            system("clear");
-            printf("Solve Algorithm in Use: %s\n\n", mode);
-            for (auto y = 0; y < this->game.height; y++) {
-                for (auto x = 0; x < this->game.width; x++) {
-                    if (x == last_clicked.first && y == last_clicked.second) {
-                        printf("\x1b[32m");
-                    }
-
-                    auto value = this->state[x][y].value();
-                    switch (value) {
-                        case Minesweeper::MINE:
-                            printf("* ");
-                            break;
-                        case Minesweeper::FLAG:
-                            printf("f ");
-                            break;
-                        case Minesweeper::COVERED:
-                            printf("O ");
-                            break;
-                        case 0:
-                            printf("  ");
-                            break;
-                        default:
-                            printf("%d ", value);
-                    }
-
-                    if (x == last_clicked.first && y == last_clicked.second) {
-                        printf("\x1b[0m");
-                    }
-                }
-                printf("\n");
-            }
-            printf("\n");
-            std::this_thread::sleep_for(std::chrono::milliseconds(250));
-        }
-
-        void print_probability() {
-            for (auto y = 0; y < this->game.height; y++) {
-                for (auto x = 0; x < this->game.width; x++) {
-                    printf("%5.2f ", boost::rational_cast<double>(this->state[x][y].mine_probability()));
-                }
-                printf("\n");
-            }
-            printf("\n");
-            std::this_thread::sleep_for(std::chrono::seconds(5));
-        }
-    };
+    }
 }
 
 // int main() {

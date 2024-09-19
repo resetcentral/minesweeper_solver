@@ -20,9 +20,9 @@ namespace minesweeper::solver {
 
         // Set node values
         state.resize(width);
-        for (auto x = 0; x < minefield.size(); x++) {
+        for (auto x = 0; x < width; x++) {
             state[x].reserve(height);
-            for (auto y = 0; y < minefield[x].size(); y++) {
+            for (auto y = 0; y < height; y++) {
                 auto n = new Node(x, y);
                 state[x].push_back(n);
             }

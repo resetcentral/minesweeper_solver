@@ -119,4 +119,8 @@ namespace minesweeper::solver {
         }
         return false;
     }
+
+    Node::~Node() {
+        printf("Destroying node: %d %d\n", _coord.first, _coord.second);
+    }
 }

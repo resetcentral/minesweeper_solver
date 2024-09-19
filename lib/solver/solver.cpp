@@ -14,37 +14,43 @@ namespace minesweeper::solver {
         if (minefield.size() == 0 || minefield[0].size() == 0) {
             throw std::invalid_argument("Solver state cannot have zero width or height.");
         }
+        
+        auto width = minefield.size();
+        auto height = minefield[0].size();
+
         // Set node values
+        state.resize(width);
         for (auto x = 0; x < minefield.size(); x++) {
-            std::vector<Node> column;
+            state[x].reserve(height);
             for (auto y = 0; y < minefield[x].size(); y++) {
-                auto n = Node(x, y);
-                n.set_value(minefield[x][y]);
-                column.push_back(n);
+                auto n = new Node(x, y);
+                state[x].push_back(n);
             }
-            state.push_back(column);
         }
 
         // Link adjacent nodes
-        auto width = state.size();
-        auto height = state[0].size();
         for (auto x = 0; x < width; x++) {
             bool link_left = x > 0;
             for (auto y = 0; y < height; y++) {
                 bool link_right = x < width-1;
                 bool link_down = y < height-1;
                 if (link_right) {
-                    state[x][y].add_adjacent(&state[x+1][y]);
+                    state[x][y]->add_adjacent(state[x+1][y]);
                 }
                 if (link_down) {
-                    state[x][y].add_adjacent(&state[x][y+1]);
+                    state[x][y]->add_adjacent(state[x][y+1]);
                 }
                 if (link_right && link_down) {
-                    state[x][y].add_adjacent(&state[x+1][y+1]);
+                    state[x][y]->add_adjacent(state[x+1][y+1]);
                 }
                 if (link_left && link_down) {
-                    state[x][y].add_adjacent(&state[x-1][y+1]);
+                    state[x][y]->add_adjacent(state[x-1][y+1]);
                 }
+            }
+        }
+        for (auto x = 0; x < width; x++) {
+            for (auto y = 0; y < height; y++) {
+                state[x][y]->set_value(minefield[x][y]);
             }
         }
     }
@@ -61,8 +67,8 @@ namespace minesweeper::solver {
         std::set<Node*> covered;
         for (auto x = 0; x < state.size(); x++) {
             for (auto y = 0; y < state[x].size(); y++) {
-                if (state[x][y].value() == Minesweeper::COVERED) {
-                    covered.insert(&state[x][y]);
+                if (state[x][y]->value() == Minesweeper::COVERED) {
+                    covered.insert(state[x][y]);
                 }
             }
         }
@@ -73,8 +79,8 @@ namespace minesweeper::solver {
         std::set<Node*> edge_set;
         for (auto x = 0; x < state.size(); x++) {
             for (auto y = 0; y < state[x].size(); y++) {
-                if (this->state[x][y].number_edge()) {
-                    edge_set.insert(&state[x][y]);
+                if (state[x][y]->number_edge()) {
+                    edge_set.insert(state[x][y]);
                 }
             }
         }
@@ -85,8 +91,8 @@ namespace minesweeper::solver {
         std::set<Node*> edge_set;
         for (auto x = 0; x < state.size(); x++) {
             for (auto y = 0; y < state[x].size(); y++) {
-                if (state[x][y].covered_edge()) {
-                    edge_set.insert(&state[x][y]);
+                if (state[x][y]->covered_edge()) {
+                    edge_set.insert(state[x][y]);
                 }
             }
         }
@@ -116,7 +122,7 @@ namespace minesweeper::solver {
     }
 
     Node* SolverState::get_node(const unsigned int x, const unsigned int y) {
-        return &state[x][y];
+        return state[x][y];
     }
 
     // State logger

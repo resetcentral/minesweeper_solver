@@ -14,6 +14,8 @@ namespace minesweeper::solver {
 
     public:
         Node(unsigned int x, unsigned int y);
+        Node(const Node& other) = delete;
+        Node& operator=(const Node& other) = delete;
 
         const std::pair<unsigned int, unsigned int>& coord() const;
 
@@ -40,5 +42,7 @@ namespace minesweeper::solver {
         bool number_edge() const;
 
         bool covered_safe() const;
+
+        ~Node();
     };
 }

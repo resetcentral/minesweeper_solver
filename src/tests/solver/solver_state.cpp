@@ -163,3 +163,15 @@ TEST_F(SolverStateTest, ConstructorPartialMinefield) {
     EXPECT_EQ(partialState.get_node(2, 0)->value(), Minesweeper::COVERED);
     EXPECT_EQ(partialState.get_node(2, 1)->value(), Minesweeper::COVERED);
 }
+
+TEST_F(SolverStateTest, ConstructorPartialAdjacentMines) {
+    auto partialState = SolverState(field2);
+    EXPECT_EQ(partialState.get_node(0, 0)->adjacent_mines_left(), 0);
+    EXPECT_EQ(partialState.get_node(0, 1)->adjacent_mines_left(), 0);
+    EXPECT_EQ(partialState.get_node(0, 2)->adjacent_mines_left(), 0);
+    EXPECT_EQ(partialState.get_node(1, 0)->adjacent_mines_left(), 2);
+    EXPECT_EQ(partialState.get_node(1, 1)->adjacent_mines_left(), 2);
+    EXPECT_EQ(partialState.get_node(1, 2)->adjacent_mines_left(), 0);
+    EXPECT_EQ(partialState.get_node(2, 0)->adjacent_mines_left(), 0);
+    EXPECT_EQ(partialState.get_node(2, 1)->adjacent_mines_left(), 0);
+}

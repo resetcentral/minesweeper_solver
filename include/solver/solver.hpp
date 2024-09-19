@@ -5,7 +5,7 @@ namespace minesweeper::solver {
     using minesweeper::Minesweeper;
 
     class SolverState {
-        std::vector<std::vector<Node>> state;
+        std::vector<std::vector<Node*>> state;
         Node* _selected;
 
     public:

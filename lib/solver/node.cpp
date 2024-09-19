@@ -81,7 +81,7 @@ namespace minesweeper::solver {
         _mine_probability = mp;
     }
 
-    unsigned int Node::adjacent_mines_left() const {
+    unsigned short Node::adjacent_mines_left() const {
         return _adjacent_mines_left;
     }
 

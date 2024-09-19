@@ -10,7 +10,7 @@ namespace minesweeper::solver {
         unsigned short _value = Minesweeper::COVERED;
         std::set<Node*> _adjacent{};
         boost::rational<unsigned int> _mine_probability{};
-        unsigned int _adjacent_mines_left = 0;
+        unsigned short _adjacent_mines_left = 0;
 
     public:
         Node(unsigned int x, unsigned int y);
@@ -33,7 +33,7 @@ namespace minesweeper::solver {
 
         void set_mine_probability(boost::rational<unsigned int> mp);
 
-        unsigned int adjacent_mines_left() const;
+        unsigned short adjacent_mines_left() const;
 
         bool covered_edge() const;
 

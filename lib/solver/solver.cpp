@@ -222,9 +222,9 @@ namespace minesweeper::solver {
             std::array<int, 3> picked{};
             auto choose_table = choose_matrix<8,8>();
             while (choose[0] >= 0 && choose[2] >= 0) {
-                auto total = 0;
+                auto total = 1;
                 for (auto i = 0; i < 3; i++) {
-                    total += choose_table[counts[i]][choose[i]];
+                    total *= choose_table[counts[i]][choose[i]];
                 }
                 for (auto i = 0; i < 3; i++) {
                     picked[i] += choose[i] * total;
@@ -242,13 +242,12 @@ namespace minesweeper::solver {
                         definitive.insert(std::pair{node, false});
                     }
                 } else if (counts[i] > 0) {
+                    boost::rational<unsigned int> probability{ picked[i] / counts[i] , running_total };
                     for (auto node : segment) {
-                        boost::rational<unsigned int> probability{ picked[i] / counts[i] , running_total };
-                        if (probability.denominator() < node->mine_probability().denominator()) {
-                            node->set_mine_probability(probability);
-                        }
                         if (probability == 1) {
                             definitive.insert(std::pair{node, true});
+                        } else if (probability.denominator() < node->mine_probability().denominator()) {
+                            node->set_mine_probability(probability);
                         }
                     }
                 }

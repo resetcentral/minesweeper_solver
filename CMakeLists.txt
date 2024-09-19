@@ -125,6 +125,19 @@ target_link_libraries(
 )
 
 add_executable(
+  solver_state_test
+  src/tests/solver/solver_state.cpp
+)
+target_include_directories(solver_state_test PUBLIC include/)
+
+target_link_libraries(
+  solver_state_test
+  solver
+  GTest::gtest_main
+  gmock_main
+)
+
+add_executable(
   solver_test
   src/tests/solver/solver.cpp
 )
@@ -142,3 +155,5 @@ gtest_discover_tests(generator)
 gtest_discover_tests(minesweeper_test)
 gtest_discover_tests(solver_choose_test)
 gtest_discover_tests(solver_node_test)
+gtest_discover_tests(solver_state_test)
+gtest_discover_tests(solver_test)

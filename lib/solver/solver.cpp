@@ -283,6 +283,7 @@ namespace minesweeper::solver {
                 mines_left
             );
             if (definitive.size() > 0) {
+                throw std::logic_error("How did we get here?");
                 return definitive;
             }
         }

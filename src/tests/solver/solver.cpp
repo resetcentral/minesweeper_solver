@@ -69,8 +69,6 @@ TEST_F(SubSolverTest, BasicSafe) {
 TEST_F(SubSolverTest, AdvancedSolve1Safe) {
     minesweeper::Minefield advanced_field = {
         { 1,                    1,                    1 },
-        { Minesweeper::COVERED, Minesweeper::COVERED, Minesweeper::COVERED },
-        { Minesweeper::COVERED, Minesweeper::COVERED, Minesweeper::COVERED },
         { Minesweeper::COVERED, Minesweeper::COVERED, Minesweeper::COVERED }
     };
     auto state = SolverState(advanced_field);
@@ -85,8 +83,7 @@ TEST_F(SubSolverTest, AdvancedSolve3Safe) {
     minesweeper::Minefield advanced_field = {
         { 1,                    Minesweeper::COVERED, Minesweeper::FLAG },
         { Minesweeper::COVERED, 3,                    Minesweeper::COVERED },
-        { Minesweeper::COVERED, Minesweeper::COVERED, Minesweeper::FLAG },
-        { Minesweeper::COVERED, Minesweeper::COVERED, Minesweeper::COVERED }
+        { Minesweeper::COVERED, Minesweeper::COVERED, Minesweeper::FLAG }
     };
     auto state = SolverState(advanced_field);
     auto decisions = advanced.solve(state, 5);
@@ -102,7 +99,6 @@ TEST_F(SubSolverTest, AdvancedSolve2Flag) {
     minesweeper::Minefield advanced_field = {
         { Minesweeper::COVERED, Minesweeper::COVERED, Minesweeper::COVERED },
         { 4,                    Minesweeper::COVERED, 2 },
-        { Minesweeper::COVERED, Minesweeper::COVERED, Minesweeper::COVERED },
         { Minesweeper::COVERED, Minesweeper::COVERED, Minesweeper::COVERED }
     };
     auto state = SolverState(advanced_field);
@@ -204,11 +200,11 @@ TEST_F(SubSolverTest, ProbableSolveHard) {
     minesweeper::Minefield probable_hard_field = {
         { Minesweeper::COVERED, 2,                    Minesweeper::COVERED },
         { Minesweeper::COVERED, Minesweeper::COVERED, 1 },
-        { Minesweeper::COVERED, 2,                    Minesweeper::COVERED}
+        { Minesweeper::COVERED, 2,                    Minesweeper::COVERED }
     };
     auto state = SolverState(probable_hard_field);
 
-    auto safeish = probable.solve(state, 3);
+    auto safeish = probable.solve(state, 5); // assume this is a subsection of a larger board
 
     EXPECT_THAT(safeish, AnyOf(
         state.get_node(0, 2),

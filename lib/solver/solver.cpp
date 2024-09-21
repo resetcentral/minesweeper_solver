@@ -271,17 +271,19 @@ namespace minesweeper::solver {
         auto num_edge = state.number_edge();
 
         for (auto node : num_edge) {
+            auto node_mines = node->adjacent_mines_left();
             auto adjacent_covered = node->adjacent_covered();
             for (auto adj_node : adjacent_covered) {
                 auto adj_nums = adj_node->adjacent_active_numbers();
                 for (auto adj_num : adj_nums) {
-                    if (node->value() > adj_num->value()) {
+                    auto adj_mines = adj_num->adjacent_mines_left();
+                    if (node_mines >  adj_mines) {
                         auto adj_num_adj_covered = adj_num->adjacent_covered();
                         auto set_diff = set_utils::set_difference(adjacent_covered, adj_num_adj_covered);
-                        auto num_diff = node->value() - adj_num->value();
-                        if (set_diff.size() == num_diff) {
+                        auto mines_diff = node_mines - adj_mines;
+                        if (set_diff.size() == mines_diff) {
                             flag.merge(set_diff);
-                        } else if (set_diff.size() < num_diff) {
+                        } else if (set_diff.size() < mines_diff) {
                             printf("Node (%d, %d): %d and Node (%d, %d): %d cannot coexist\n",
                                 node->coord().first,
                                 node->coord().second,
@@ -300,9 +302,28 @@ namespace minesweeper::solver {
         return flag;
     }
 
-    std::set<Node*> safe(SolverState state) {
+    std::set<Node*> AdvancedSolver::safe(SolverState state) {
         std::set<Node*> safe_nodes;
         
+        auto num_edge = state.number_edge();
+        for (auto node : num_edge) {
+            if (node->adjacent_mines_left() == 1) {
+                auto adjacent_covered = node->adjacent_covered();
+                for (auto adj_node : adjacent_covered) {
+                    auto adj_nums = adj_node->adjacent_active_numbers();
+                    for (auto adj_num : adj_nums) {
+                        auto adj_num_adj_covered = adj_num->adjacent_covered();
+                        auto set_diff = set_utils::set_difference(adj_num_adj_covered, adjacent_covered);
+                        if (set_diff.size() < adj_num->adjacent_mines_left()) {
+                            // Any nodes not shared by the two numbers, must be safe
+                            // otherwise, adj_num cannot reach the required number of mines
+                            set_diff = set_utils::set_difference(adjacent_covered, adj_num_adj_covered);
+                            safe_nodes.merge(set_diff);
+                        }
+                    }
+                }
+            }
+        }
 
         return safe_nodes;
     }

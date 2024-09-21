@@ -114,7 +114,24 @@ TEST_F(SubSolverTest, AdvancedSolve2Flag) {
     ));
 }
 
-TEST_F(SubSolverTest, AdvancedSolve2Flag2Safe) {
+TEST_F(SubSolverTest, AdvancedSolveExistingFlag) {
+    minesweeper::Minefield advanced_field = {
+        { Minesweeper::FLAG,    2,                    Minesweeper::COVERED },
+        { Minesweeper::COVERED, Minesweeper::COVERED, Minesweeper::COVERED },
+        { 4,                    Minesweeper::COVERED, Minesweeper::COVERED },
+        { Minesweeper::COVERED, Minesweeper::COVERED, Minesweeper::COVERED }
+    };
+    auto state = SolverState(advanced_field);
+    auto flaggable = advanced.flaggable(state);
+
+    EXPECT_THAT(flaggable, UnorderedElementsAre(
+        state.get_node(2, 1),
+        state.get_node(3, 0),
+        state.get_node(3, 1)
+    ));
+}
+
+TEST_F(SubSolverTest, AdvancedSolve2Safe) {
     minesweeper::Minefield advanced_field = {
         { Minesweeper::COVERED, Minesweeper::COVERED, Minesweeper::COVERED },
         { 3,                    Minesweeper::COVERED, 1 },

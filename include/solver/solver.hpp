@@ -49,6 +49,10 @@ namespace minesweeper::solver {
         std::set<std::pair<Node*, bool>> compare_sets(std::set<Node*> set1, int set1_mines, std::set<Node*> set2, int set2_mines);
 
     public:
+        std::set<Node*> flaggable(SolverState state);
+
+        std::set<Node*> safe(SolverState state);
+
         std::set<std::pair<Node*, bool>> solve(SolverState state, int mines_left);
 
     };

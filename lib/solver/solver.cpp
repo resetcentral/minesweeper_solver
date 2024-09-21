@@ -1,9 +1,9 @@
+#include <set_utils.hpp>
 #include <solver/solver.hpp>
 #include <stdexcept>
 #include <chrono>
 #include <thread>
 #include "stdlib.h"
-#include <algorithm>
 #include <iterator>
 
 
@@ -203,10 +203,10 @@ namespace minesweeper::solver {
         std::set<std::pair<Node*, bool>> definitive;
 
         std::array<std::set<Node*>, 3> segments;
-        std::set_intersection(set1.begin(), set1.end(), set2.begin(), set2.end(), std::inserter(segments[1], segments[1].begin()));
+        segments[1] = set_utils::set_intersection(set1, set2);
         if (!segments[1].empty()) {
-            std::set_difference(set1.begin(), set1.end(), set2.begin(), set2.end(), std::inserter(segments[0], segments[0].begin()));
-            std::set_difference(set2.begin(), set2.end(), set1.begin(), set1.end(), std::inserter(segments[2], segments[2].begin()));
+            segments[0] = set_utils::set_difference(set1, set2);
+            segments[2] = set_utils::set_difference(set2, set1);
 
             std::array<std::size_t, 3> counts{};
             for (auto i = 0; i < segments.size(); i++) {
@@ -246,8 +246,16 @@ namespace minesweeper::solver {
                     for (auto node : segment) {
                         if (probability == 1) {
                             definitive.insert(std::pair{node, true});
-                        } else if (probability.denominator() < node->mine_probability().denominator()) {
+                        } else if (node->mine_probability().numerator() == 0) {
                             node->set_mine_probability(probability);
+                        } else {
+                            boost::rational<unsigned int> one{1, 1};
+                            auto old_probability = node->mine_probability();
+                            auto num = old_probability.numerator() * probability.numerator();
+                            auto den = ((one - old_probability).numerator() * (one - probability).numerator()) + num;
+
+                            boost::rational<unsigned int> new_probability{num, den};
+                            node->set_mine_probability(new_probability);
                         }
                     }
                 }
@@ -257,8 +265,50 @@ namespace minesweeper::solver {
         return definitive;
     }
 
+    std::set<Node*> AdvancedSolver::flaggable(SolverState state) {
+        std::set<Node*> flag;
+
+        auto num_edge = state.number_edge();
+
+        for (auto node : num_edge) {
+            auto adjacent_covered = node->adjacent_covered();
+            for (auto adj_node : adjacent_covered) {
+                auto adj_nums = adj_node->adjacent_active_numbers();
+                for (auto adj_num : adj_nums) {
+                    if (node->value() > adj_num->value()) {
+                        auto adj_num_adj_covered = adj_num->adjacent_covered();
+                        auto set_diff = set_utils::set_difference(adjacent_covered, adj_num_adj_covered);
+                        auto num_diff = node->value() - adj_num->value();
+                        if (set_diff.size() == num_diff) {
+                            flag.merge(set_diff);
+                        } else if (set_diff.size() < num_diff) {
+                            printf("Node (%d, %d): %d and Node (%d, %d): %d cannot coexist\n",
+                                node->coord().first,
+                                node->coord().second,
+                                node->value(),
+                                adj_num->coord().first,
+                                adj_num->coord().second,
+                                adj_num->value()
+                            );
+                            throw std::logic_error("Encountered impossible situation");
+                        }
+                    }
+                }
+            }
+        }
+
+        return flag;
+    }
+
+    std::set<Node*> safe(SolverState state) {
+        std::set<Node*> safe_nodes;
+        
+
+        return safe_nodes;
+    }
+
     std::set<std::pair<Node*, bool>> AdvancedSolver::solve(SolverState state, int mines_left) {
-        std::set<std::pair<Node*, bool>> definitive;
+        std::set<std::pair<Node*, bool>> results;
 
         auto num_edge = state.number_edge();
         for (auto node1 : num_edge) {
@@ -267,27 +317,34 @@ namespace minesweeper::solver {
                     continue;
                 }
 
-                definitive = compare_sets(node1->adjacent_covered(),
+                auto definitive = compare_sets(node1->adjacent_covered(),
                     node1->adjacent_mines_left(),
                     node2->adjacent_covered(),
                     node2->adjacent_mines_left()
                 );
+                results.merge(definitive);
                 if (definitive.size() > 0) {
                     return definitive;
                 }
             }
-            definitive = compare_sets(
-                node1->adjacent_covered(),
-                node1->adjacent_mines_left(),
-                state.covered(),
-                mines_left
-            );
-            if (definitive.size() > 0) {
-                throw std::logic_error("How did we get here?");
-                return definitive;
-            }
+            // definitive = compare_sets(
+            //     node1->adjacent_covered(),
+            //     node1->adjacent_mines_left(),
+            //     state.covered(),
+            //     mines_left
+            // );
+            // if (definitive.size() > 0) {
+            //     throw std::logic_error("How did we get here?");
+            //     return definitive;
+            // }
         }
-        return definitive;
+        auto covered_edge = state.covered_edge();
+        for (auto node : num_edge) {
+            auto covered = node->adjacent_covered();
+
+        }
+
+        return results;
     }
 
 

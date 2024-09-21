@@ -72,7 +72,11 @@ class NodeTest : public ::testing::Test {
     }
 
     virtual void TearDown() {
-        
+        for (auto column : nodes) {
+            for (auto node: column) {
+                delete node;
+            }
+        }
     }
 };
 

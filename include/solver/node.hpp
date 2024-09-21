@@ -27,6 +27,8 @@ namespace minesweeper::solver {
 
         std::set<Node*> adjacent_covered() const;
 
+        std::set<Node*> adjacent_active_numbers();
+
         unsigned int adjacent_covered_count() const;
 
         void add_adjacent(Node* node);

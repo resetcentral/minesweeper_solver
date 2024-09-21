@@ -52,6 +52,17 @@ namespace minesweeper::solver {
         return covered;
     }
 
+    std::set<Node*> Node::adjacent_active_numbers() {
+        std::set<Node*> numbers;
+        for (auto node : _adjacent) {
+            if (node->value() <= 8 && node->adjacent_mines_left() > 0) {
+                numbers.insert(node);
+            }
+        }
+
+        return numbers;
+    }
+
     unsigned int Node::adjacent_covered_count() const {
         unsigned int count = 0;
         for (auto node : _adjacent) {

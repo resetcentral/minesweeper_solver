@@ -4,12 +4,13 @@
 
 namespace minesweeper::solver {
     using minesweeper::Minesweeper;
+    using fraction = boost::rational<int>;
 
     class Node {
         std::pair<unsigned int, unsigned int> _coord;
         unsigned short _value = Minesweeper::COVERED;
         std::set<Node*> _adjacent{};
-        boost::rational<unsigned int> _mine_probability{};
+        fraction _mine_probability{};
         unsigned short _adjacent_mines_left = 0;
 
     public:
@@ -33,9 +34,9 @@ namespace minesweeper::solver {
 
         void add_adjacent(Node* node);
 
-        boost::rational<unsigned int> mine_probability() const;
+        fraction mine_probability() const;
 
-        void set_mine_probability(boost::rational<unsigned int> mp);
+        void set_mine_probability(fraction mp);
 
         unsigned short adjacent_mines_left() const;
 

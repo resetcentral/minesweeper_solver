@@ -5,10 +5,14 @@
 #include <thread>
 #include "stdlib.h"
 #include <iterator>
-
+#include <unordered_map>
+#include <map>
+#include <solver/sle.hpp>
 
 namespace minesweeper::solver {
     using minesweeper::Minesweeper;
+
+    using fraction = boost::rational<int>;
 
     SolverState::SolverState(const Minefield& minefield) {
         if (minefield.size() == 0 || minefield[0].size() == 0) {
@@ -242,19 +246,19 @@ namespace minesweeper::solver {
                         definitive.insert(std::pair{node, false});
                     }
                 } else if (counts[i] > 0) {
-                    boost::rational<unsigned int> probability{ picked[i] / counts[i] , running_total };
+                    fraction probability{ picked[i] / counts[i] , running_total };
                     for (auto node : segment) {
                         if (probability == 1) {
                             definitive.insert(std::pair{node, true});
                         } else if (node->mine_probability().numerator() == 0) {
                             node->set_mine_probability(probability);
                         } else {
-                            boost::rational<unsigned int> one{1, 1};
+                            fraction one{1, 1};
                             auto old_probability = node->mine_probability();
                             auto num = old_probability.numerator() * probability.numerator();
                             auto den = ((one - old_probability).numerator() * (one - probability).numerator()) + num;
 
-                            boost::rational<unsigned int> new_probability{num, den};
+                            fraction new_probability{num, den};
                             node->set_mine_probability(new_probability);
                         }
                     }
@@ -372,38 +376,98 @@ namespace minesweeper::solver {
     // Least probable
     void ProbableSolver::calculate_probability(SolverState state, int mines_left) {
         auto covered_edge_nodes = state.covered_edge();
-        auto covered_nodes = state.covered();
+        auto number_edge = state.number_edge();
+        sle::SystemOfLinearEquations equations;
+        fraction total_probability{};
 
-        auto number_edge_nodes = state.number_edge();
-        if (number_edge_nodes.size() == 1) {
-            boost::rational<unsigned int> probability{
-                (*number_edge_nodes.begin())->adjacent_mines_left(),
-                covered_edge_nodes.size()
-            };
-            for (auto node : covered_edge_nodes) {
-                node->set_mine_probability(probability);
-            }
-        };
-
-        boost::rational<unsigned int> edge_probability {};
+        std::unordered_map<Node*, unsigned int> node_map;
+        auto i = 0;
         for (auto node : covered_edge_nodes) {
-            edge_probability += node->mine_probability();
+            node_map.insert({node, i});
+            i++;
         }
 
-        auto non_edge_sum = boost::rational<unsigned int>{ mines_left } - edge_probability;
-        auto non_edge_covered_count = covered_nodes.size() - covered_edge_nodes.size();
-        if (non_edge_covered_count > 0) {
-            auto non_edge_probability = non_edge_sum / boost::rational<unsigned int>{ non_edge_covered_count };
-            for (auto node : covered_nodes) {
-                if (!covered_edge_nodes.contains(node)) {
-                    node->set_mine_probability(non_edge_probability);
+        std::map<std::multiset<std::pair<unsigned short, unsigned short>>, std::set<unsigned int>> equality_map{};
+        auto step = 1;
+
+        for (auto num_node : number_edge) {
+            auto mines = num_node->adjacent_mines_left();
+            fraction total { mines };
+            std::unordered_map<unsigned int, fraction> coefficients;
+
+            auto adj_covered = num_node->adjacent_covered();
+            for (auto node : adj_covered) {
+                auto node_idx = node_map[node];
+                auto adj_nums = node->adjacent_active_numbers();
+                if (adj_nums.size() == 1) {
+                    auto neighbor_count = adj_covered.size();
+                    fraction p{ mines, neighbor_count };
+                    total -= p;
+                    node->set_mine_probability(p);
+                    total_probability += p;
+                    equations.set_variable(node_idx, p);
+                    
+                    if (neighbor_count > step) {
+                        step = neighbor_count;
+                    }
+                } else {
+                    std::multiset<std::pair<unsigned short, unsigned short>> attributes{};
+                    for (auto adj_num : adj_nums) {
+                        auto n = adj_num->adjacent_covered_count();
+                        auto k = adj_num->adjacent_mines_left();
+                        attributes.insert({n, k});
+                    }
+                    if (!equality_map.contains(attributes)) {
+                        equality_map.insert({attributes, {node_idx} });
+                    } else {
+                        equality_map[attributes].insert(node_idx);
+                    }
+                    coefficients.insert({ node_idx, 1});
                 }
+                
+            }
+            equations.add_equation(coefficients, total);
+        }
+
+        for (auto &[attributes, equal_set] : equality_map) {
+            equations.set_equal(equal_set);
+        }
+
+        auto assignments = equations.attempt_solve(fraction{1, step});
+        for (auto node : covered_edge_nodes) {
+            auto node_idx = node_map[node];
+            if (assignments.contains(node_idx)) {
+                node->set_mine_probability(assignments[node_idx]);
+                total_probability += assignments[node_idx];
+            }
+        }
+
+        auto non_edge_covered = set_utils::set_difference(state.covered(), covered_edge_nodes);
+        if (non_edge_covered.size() > 0) {
+            auto p = (mines_left - total_probability) / fraction{non_edge_covered.size()};
+
+            for (auto node : non_edge_covered) {
+                node->set_mine_probability(p);
             }
         }
     }
 
     Node* ProbableSolver::solve(SolverState state, int mines_left) {
         calculate_probability(state, mines_left);
+
+        printf("\n");
+        for (auto y = 0; y < state.height(); y++) {
+            for (auto x = 0; x < state.width(); x++) {
+                auto node = state.get_node(x, y);
+                if (node->value() == Minesweeper::COVERED) {
+                    printf("\x1b[32m"); // Green
+                }
+                printf("%5.2f", boost::rational_cast<double>(node->mine_probability()));
+                printf("\x1b[0m"); // Reset color
+            }
+            printf("\n");
+        }
+        printf("\n");
 
         auto covered_nodes = state.covered();
         Node* least_probable = *covered_nodes.begin();
@@ -460,6 +524,18 @@ namespace minesweeper::solver {
         }
     }
 
+    void MinesweeperSolver::flag_all(std::set<Node*> nodes) {
+        for (auto node : nodes) {
+            flag_or_uncover(node, true);
+        }
+    }
+
+    void MinesweeperSolver::uncover_all(std::set<Node*> nodes) {
+        for (auto node : nodes) {
+            flag_or_uncover(node, false);
+        }
+    }
+
     void MinesweeperSolver::solve() {
         BasicSolver basic;
         AdvancedSolver advanced;
@@ -473,24 +549,19 @@ namespace minesweeper::solver {
         while (true) {
             logger.set_mode("Basic");
             auto mine_nodes = basic.flaggable(state);
-            for (auto node : mine_nodes) {
-                flag_or_uncover(node, true);
-            }
+            flag_all(mine_nodes);
 
             auto safe_nodes = basic.safe(state);
             if (safe_nodes.size() > 0) {
-                for (auto node : safe_nodes) {
-                    if (node->value() == Minesweeper::COVERED) {
-                        flag_or_uncover(node, false);
-                    }
-                }
+                uncover_all(safe_nodes);
             } else {
                 logger.set_mode("Advanced");
-                auto decisions = advanced.solve(state, game.mines_left());
-                if (decisions.size() > 0) {
-                    for (auto [node, flag] : decisions) {
-                        flag_or_uncover(node, flag);
-                    }
+                mine_nodes = advanced.flaggable(state);
+                flag_all(mine_nodes);
+
+                safe_nodes = advanced.safe(state);
+                if (safe_nodes.size() > 0) {
+                    uncover_all(safe_nodes);
                 } else {
                     logger.set_mode("Most probable (this might blow up)");
                     auto picked = probable.solve(state, game.mines_left());
@@ -500,11 +571,3 @@ namespace minesweeper::solver {
         }
     }
 }
-
-// int main() {
-//     // Get height, width, num mines (or give options: Beginner, intermediate, expert)
-
-//     minesweeper::Minesweeper game(30, 16, 99);
-//     minesweeper::solver::MinesweeperSolver solver(game);
-//     solver.solve();
-// }

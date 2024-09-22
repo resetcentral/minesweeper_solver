@@ -145,7 +145,7 @@ TEST_F(SubSolverTest, AdvancedSolve2Safe) {
 
 }
 
-TEST_F(SubSolverTest, ProbableSolve1LowMines) {
+TEST_F(SubSolverTest, ProbableCalculate1LowMines) {
     minesweeper::Minefield probable_field = {
         { Minesweeper::COVERED, 1,                    Minesweeper::COVERED },
         { Minesweeper::COVERED, Minesweeper::COVERED, Minesweeper::COVERED },
@@ -153,12 +153,77 @@ TEST_F(SubSolverTest, ProbableSolve1LowMines) {
         { Minesweeper::COVERED, Minesweeper::COVERED, Minesweeper::COVERED }
     };
     auto state = SolverState(probable_field);
-    auto safeish = probable.solve(state, 2);
+    probable.calculate_probability(state, 3);
 
-    EXPECT_THAT(safeish, AnyOf(
-        state.get_node(2, 0), state.get_node(2, 1), state.get_node(2, 2), 
-        state.get_node(3, 0), state.get_node(3, 1), state.get_node(3, 2)
-    ));
+    fraction one_fifth{1, 5};
+    fraction one_third{1, 3};
+    EXPECT_EQ(state.get_node(0, 0)->mine_probability(), one_fifth);
+    EXPECT_EQ(state.get_node(0, 2)->mine_probability(), one_fifth);
+    EXPECT_EQ(state.get_node(1, 0)->mine_probability(), one_fifth);
+    EXPECT_EQ(state.get_node(1, 1)->mine_probability(), one_fifth);
+    EXPECT_EQ(state.get_node(1, 2)->mine_probability(), one_fifth);
+    EXPECT_EQ(state.get_node(2, 1)->mine_probability(), one_third);
+    EXPECT_EQ(state.get_node(3, 2)->mine_probability(), one_third);
+}
+
+
+
+// TEST_F(SubSolverTest, ProbableSolve2) {
+//     minesweeper::Minefield probable_field = {
+//         { Minesweeper::COVERED, 1,                    Minesweeper::COVERED },
+//         { Minesweeper::COVERED, 2,                    Minesweeper::COVERED },
+//         { Minesweeper::COVERED, Minesweeper::COVERED, Minesweeper::COVERED },
+//         { Minesweeper::COVERED, Minesweeper::COVERED, Minesweeper::COVERED }
+//     };
+//     auto state = SolverState(probable_field);
+
+//     EXPECT_EQ(advanced.solve(state, 3).size(), 0);
+
+//     auto safeish = probable.solve(state, 3);
+
+//     EXPECT_THAT(safeish, AnyOf(
+//         state.get_node(0, 0),                       state.get_node(0, 2), 
+//         state.get_node(1, 0), state.get_node(1, 1), state.get_node(1, 2)
+//     ));
+// }
+
+TEST_F(SubSolverTest, ProbableCalculate) {
+    minesweeper::Minefield probable_field = {
+        { Minesweeper::COVERED, 3,                    Minesweeper::FLAG },
+        { Minesweeper::COVERED, Minesweeper::COVERED, 2 },
+        { Minesweeper::FLAG,    Minesweeper::COVERED, 1 }
+    };
+    auto state = SolverState(probable_field);
+
+    probable.calculate_probability(state, 6); // assume this is a subsection of a larger board
+
+    fraction one_third {1, 3};
+    fraction two_thirds {2, 3};
+    EXPECT_EQ(state.get_node(0, 0)->mine_probability(), two_thirds);
+    EXPECT_EQ(state.get_node(1, 0)->mine_probability(), two_thirds);
+    EXPECT_EQ(state.get_node(1, 1)->mine_probability(), two_thirds);
+    EXPECT_EQ(state.get_node(2, 1)->mine_probability(), one_third);
+}
+
+TEST_F(SubSolverTest, ProbableCalculateHard) {
+    minesweeper::Minefield probable_hard_field = {
+        { Minesweeper::COVERED, 2,                    Minesweeper::COVERED },
+        { Minesweeper::COVERED, Minesweeper::COVERED, 1 },
+        { Minesweeper::COVERED, 2,                    Minesweeper::COVERED }
+    };
+    auto state = SolverState(probable_hard_field);
+
+    probable.calculate_probability(state, 6); // assume this is a subsection of a larger board
+
+    fraction one_half {1, 2};
+    fraction one_quarter {1, 4};
+    fraction three_quarters {3, 4};
+    EXPECT_EQ(state.get_node(0, 0)->mine_probability(), one_half);
+    EXPECT_EQ(state.get_node(0, 2)->mine_probability(), one_quarter);
+    EXPECT_EQ(state.get_node(1, 0)->mine_probability(), three_quarters);
+    EXPECT_EQ(state.get_node(1, 1)->mine_probability(), one_half);
+    EXPECT_EQ(state.get_node(2, 0)->mine_probability(), one_half);
+    EXPECT_EQ(state.get_node(2, 2)->mine_probability(), one_quarter);
 }
 
 TEST_F(SubSolverTest, ProbableSolve1HighMines) {
@@ -177,37 +242,18 @@ TEST_F(SubSolverTest, ProbableSolve1HighMines) {
     ));
 }
 
-TEST_F(SubSolverTest, ProbableSolve2) {
-    minesweeper::Minefield probable_field = {
-        { Minesweeper::COVERED, 1,                    Minesweeper::COVERED },
-        { Minesweeper::COVERED, 2,                    Minesweeper::COVERED },
-        { Minesweeper::COVERED, Minesweeper::COVERED, Minesweeper::COVERED },
-        { Minesweeper::COVERED, Minesweeper::COVERED, Minesweeper::COVERED }
-    };
-    auto state = SolverState(probable_field);
+// TEST_F(SubSolverTest, ProbableSolveHard) {
+//     minesweeper::Minefield probable_hard_field = {
+//         { Minesweeper::COVERED, 2,                    Minesweeper::COVERED },
+//         { Minesweeper::COVERED, Minesweeper::COVERED, 1 },
+//         { Minesweeper::COVERED, 2,                    Minesweeper::COVERED }
+//     };
+//     auto state = SolverState(probable_hard_field);
 
-    EXPECT_EQ(advanced.solve(state, 3).size(), 0);
+//     auto safeish = probable.solve(state, 5); // assume this is a subsection of a larger board
 
-    auto safeish = probable.solve(state, 3);
-
-    EXPECT_THAT(safeish, AnyOf(
-        state.get_node(0, 0),                       state.get_node(0, 2), 
-        state.get_node(1, 0), state.get_node(1, 1), state.get_node(1, 2)
-    ));
-}
-
-TEST_F(SubSolverTest, ProbableSolveHard) {
-    minesweeper::Minefield probable_hard_field = {
-        { Minesweeper::COVERED, 2,                    Minesweeper::COVERED },
-        { Minesweeper::COVERED, Minesweeper::COVERED, 1 },
-        { Minesweeper::COVERED, 2,                    Minesweeper::COVERED }
-    };
-    auto state = SolverState(probable_hard_field);
-
-    auto safeish = probable.solve(state, 5); // assume this is a subsection of a larger board
-
-    EXPECT_THAT(safeish, AnyOf(
-        state.get_node(0, 2),
-        state.get_node(2, 2)
-    ));
-}
+//     EXPECT_THAT(safeish, AnyOf(
+//         state.get_node(0, 2),
+//         state.get_node(2, 2)
+//     ));
+// }

@@ -58,9 +58,9 @@ namespace minesweeper::solver {
     };
 
     class ProbableSolver {
+    public:
         void calculate_probability(SolverState state, int mines_left);
 
-    public:
         Node* solve(SolverState state, int mines_left);
     };
 
@@ -70,6 +70,10 @@ namespace minesweeper::solver {
         StateLogger logger;
 
         void flag_or_uncover(Node* node, bool flag);
+
+        void flag_all(std::set<Node*> nodes);
+
+        void uncover_all(std::set<Node*> nodes);
 
         void check_game_state(Minesweeper::GameState game_state);
 

@@ -167,27 +167,6 @@ TEST_F(SubSolverTest, ProbableCalculate1LowMines) {
     EXPECT_EQ(state.get_node(3, 2)->mine_probability(), one_third);
 }
 
-
-
-// TEST_F(SubSolverTest, ProbableSolve2) {
-//     minesweeper::Minefield probable_field = {
-//         { Minesweeper::COVERED, 1,                    Minesweeper::COVERED },
-//         { Minesweeper::COVERED, 2,                    Minesweeper::COVERED },
-//         { Minesweeper::COVERED, Minesweeper::COVERED, Minesweeper::COVERED },
-//         { Minesweeper::COVERED, Minesweeper::COVERED, Minesweeper::COVERED }
-//     };
-//     auto state = SolverState(probable_field);
-
-//     EXPECT_EQ(advanced.solve(state, 3).size(), 0);
-
-//     auto safeish = probable.solve(state, 3);
-
-//     EXPECT_THAT(safeish, AnyOf(
-//         state.get_node(0, 0),                       state.get_node(0, 2), 
-//         state.get_node(1, 0), state.get_node(1, 1), state.get_node(1, 2)
-//     ));
-// }
-
 TEST_F(SubSolverTest, ProbableCalculate) {
     minesweeper::Minefield probable_field = {
         { Minesweeper::COVERED, 3,                    Minesweeper::FLAG },

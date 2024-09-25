@@ -80,11 +80,11 @@ namespace minesweeper::solver {
         }
     }
 
-    fraction Node::mine_probability() const {
+    Fraction Node::mine_probability() const {
         return _mine_probability;
     }
 
-    void Node::set_mine_probability(fraction mp) {
+    void Node::set_mine_probability(Fraction mp) {
         if (mp > 1) {
             throw std::invalid_argument("Mine probability cannot be less than 0 or greater than 1.");
         }

@@ -24,7 +24,7 @@ TEST(SolverNode, AddAdjacent) {
 
 TEST(SolverNode, SetMineProbability) {
     auto node1 = Node(3, 6);
-    fraction prob{1, 2};
+    Fraction prob{1, 2};
     node1.set_mine_probability(prob);
 
     EXPECT_EQ(node1.mine_probability(), prob);
@@ -32,7 +32,7 @@ TEST(SolverNode, SetMineProbability) {
 
 TEST(SolverNode, SetMineProbabilityThrowHigh) {
     auto node1 = Node(3, 6);
-    fraction prob{4, 3};
+    Fraction prob{4, 3};
 
     EXPECT_THROW(node1.set_mine_probability(prob), std::invalid_argument);
 }

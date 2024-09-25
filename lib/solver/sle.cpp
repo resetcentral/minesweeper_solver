@@ -1,65 +1,28 @@
 #include <solver/sle.hpp>
+#include <queue>
 
 namespace minesweeper::solver::sle {
-    SystemOfLinearEquations::SystemOfLinearEquations() {
-
-    }
-
-    void SystemOfLinearEquations::add_equation(std::unordered_map<unsigned int, fraction> coefficients, fraction total) {
+    void SystemOfLinearEquations::add_equation(Coefficients coefficients, Fraction total) {
         equations.emplace_back(coefficients, total);
     }
 
-    void SystemOfLinearEquations::add_equal(unsigned int key1, unsigned int key2) {
-        std::unordered_map<unsigned int, fraction> equal({
-            { key1, 1},
-            { key2, -1}
+    void SystemOfLinearEquations::add_equal(Node* var1, Node* var2) {
+        Coefficients equal({
+            { var1, 1},
+            { var2, -1}
         });
         add_equation(equal, 0);
     }
 
-    void SystemOfLinearEquations::set_equal(std::set<unsigned int> equal_set) {
-        auto chosen = *equal_set.begin();
-        equal_set.erase(chosen);
-        for (auto key : equal_set) {
-            add_equal(chosen, key);
-        }
-    }
-
-    void SystemOfLinearEquations::set_variable(unsigned int key, fraction value) {
-        for (auto &[coefficients, total] : equations) {
-            if (coefficients.contains(key)) {
-                auto coeff = coefficients[key];
-                coefficients.erase(key);
-
-                total -= coeff * value;
-            }
-        }
-    }
-
     void SystemOfLinearEquations::print() {
-        printf("%d\n", equations.size());
+        printf("Number of Equations: %zu\n", equations.size());
         for (auto &[coefficients, total] : equations) {
             for (auto &[key, coeff] : coefficients) {
-                printf("%.2f(%d) + ", boost::rational_cast<double>(coeff), key);
+                printf("%.2f(%p) + ", boost::rational_cast<double>(coeff), key);
             }
             printf("= %.2f\n", boost::rational_cast<double>(total));
         }
         printf("\n");
-    }
-
-    void SystemOfLinearEquations::deduplicate() {
-        std::vector<unsigned int> to_remove;
-        for (auto i = 0; i < equations.size(); i++) {
-            for (auto j = i+1; j < equations.size(); j++) {
-                if (equations[i] == equations[j]) {
-                    to_remove.push_back(j);
-                }
-            }
-        }
-
-        for (auto idx : to_remove) {
-            equations.erase(equations.begin()+idx);
-        }
     }
 
     Equation SystemOfLinearEquations::subtract_equations(Equation left, Equation right) {
@@ -82,28 +45,31 @@ namespace minesweeper::solver::sle {
         return left;
     }
 
-    Equation SystemOfLinearEquations::scale_equation(Equation equation, fraction scale) {
+    Equation SystemOfLinearEquations::scale_equation(Equation equation, Fraction scale) {
         auto &[coefficients, total] = equation;
-        total *= scale;
         for (auto &[key, coeff] : coefficients) {
             coeff *= scale;
         }
+        total *= scale;
 
-        return equation;
+        return {coefficients, total};
     }
 
     void SystemOfLinearEquations::convert_row_echelon() {
         for (auto i = 0; i < equations.size(); i++) {
-            auto coefficients = equations[i].first;
-            if (coefficients.size() > 0) {
-                auto &[key, coeff] = *coefficients.begin();
+            auto &[eq1_coefficients, total] = equations[i];
+            if (eq1_coefficients.size() > 0) {
+                auto &[var, coeff] = *eq1_coefficients.begin();
                 if (coeff < 0) {
-                    equations[i] = scale_equation(equations[i], -1);
                     coeff *= -1;
+                    total *= -1;
+                    equations[i] = scale_equation(equations[i], -1);
+
                 }
                 for (auto j = i+1; j < equations.size(); j++) {
-                    if (equations[j].first.contains(key)) {
-                        auto scale = equations[j].first[key] / coeff;
+                    auto eq2_coefficients = equations[j].first;
+                    if (eq2_coefficients.contains(var)) {
+                        auto scale = eq2_coefficients[var] / coeff;
                         auto scaled = scale_equation(equations[i], scale);
                         equations[j] = subtract_equations(equations[j], scaled);
                     }
@@ -112,98 +78,81 @@ namespace minesweeper::solver::sle {
         }
     }
 
-    bool can_evaluate(std::unordered_map<unsigned int, fraction> coefficients, std::unordered_map<unsigned int, fraction> assignments) {
-        auto unknown_variable_seen = false;
+    unsigned int unknown_variables(Coefficients coefficients, Assignments assignments) {
+        auto unknown_variables_seen = 0;
         for (auto [key, value] : coefficients) {
             if (!assignments.contains(key)) {
-                if (unknown_variable_seen) {
-                    return false;
-                } else {
-                    unknown_variable_seen = true;
-                }
+                unknown_variables_seen++;
             }
         }
-        return unknown_variable_seen;
+        return unknown_variables_seen;
     }
 
-    std::pair<std::unordered_map<unsigned int, fraction>, bool> SystemOfLinearEquations::evaluate(unsigned int key, fraction value) {
-        std::unordered_map<unsigned int, fraction> assignments({{key, value}});
-        printf("(%d)=%0.2f\n", key, boost::rational_cast<double>(value));
-
-        bool no_new;
-        do {
-        no_new = true;
-            for (auto [coefficients, total]: equations) {
-                if (can_evaluate(coefficients, assignments)) {
-                    unsigned int new_key;
-                    for (auto [key, coeff] : coefficients) {
-                        if (assignments.contains(key)) {
-                            total -= coeff * assignments[key];
-                        } else {
-                            new_key = key;
-                        }
-                    }
-                    auto value = total / coefficients[new_key];
-                    assignments.insert({new_key, value});
-                    no_new = false;
-                    printf("(%d)=%0.2f\n", new_key, boost::rational_cast<double>(value));
-                    if (value <= 0 || value >= 1) {
-                        return {assignments, false};
-                    }
-                }
+    std::set<Node*> SystemOfLinearEquations::variables() {
+        std::set<Node*> vars;
+        for (auto &[coefficients, total] : equations) {
+            for (auto &[key, coeff] : coefficients) {
+                vars.insert(key);
             }
-        } while (!no_new);
+        }
 
-        return {assignments, true};
+        return vars;
     }
 
-    std::unordered_map<unsigned int, fraction> SystemOfLinearEquations::attempt_solve(fraction step) {
-        print();
-
+    std::set<Node*> SystemOfLinearEquations::independent_variables() {
         convert_row_echelon();
 
-        print();
-
-        unsigned int key;
-        fraction value;
+        auto vars = variables();
         for (auto &[coefficients, total] : equations) {
-            auto num_vars = coefficients.size();
-            if (num_vars > 0 && num_vars <= 2) {
-                key = coefficients.begin()->first;
-                
-                if (num_vars == 1) {
-                    value = total / coefficients.begin()->second;
-                    break;
-                } else {
-                    value = step;
-                }
-            }
+            vars.erase(coefficients.begin()->first);
         }
-
-        std::unordered_map<unsigned int, fraction> assignments;
-        bool valid;
-        do {
-            if (value >= 1) {
-                throw std::runtime_error("Couldn't find a solution!");
-            }
-            auto result = evaluate(key, value);
-            assignments = result.first;
-            valid = result.second;
-            value += step;
-            printf("\n");
-        } while (!valid && value < 1);
-
-        return assignments;
+        return vars;
     }
 
-    unsigned int SystemOfLinearEquations::variable_count() {
-        std::set<unsigned int> variables;
-        for (auto &[coefficients, total] : equations) {
-            for (auto &[key, coeff]: coefficients) {
-                variables.insert(key);
+    std::pair<Node*, Fraction> SystemOfLinearEquations::solve(Equation equation, const Assignments& assignments) {
+        std::pair<Node*, Fraction> solution;
+        auto &[coefficients, total] = equation;
+        
+        for (auto &[key, value] : assignments) {
+            if (coefficients.contains(key)) {
+                total -= coefficients.at(key) * assignments.at(key);
+                coefficients.erase(key);
             }
         }
 
-        return variables.size();
+        if (coefficients.size() == 1) {
+            auto &[key, coeff] = *coefficients.begin();
+            auto value = total / coeff;
+            return {key, value};
+        } else {
+            throw std::invalid_argument("Cannot solve");
+        }
+    }
+
+    void SystemOfLinearEquations::evaluate(Assignments& assignments) {
+        std::queue<Equation> sub_equations;
+        for (auto i = 0; i < equations.size(); i++) {
+            sub_equations.push(equations[i]);
+        }
+
+        while (!sub_equations.empty()) {
+            auto equation = sub_equations.front();
+            sub_equations.pop();
+
+            auto &[coefficients, total] = equation;
+            switch (unknown_variables(coefficients, assignments)) {
+                case 0: {
+                    break;
+                }
+                case 1: {
+                    auto [key, value] = solve(equation, assignments);
+                    assignments.insert({key, value});
+                    break;
+                }
+                default:
+                    sub_equations.push(equation);
+                    break;
+            }
+        }
     }
 }

@@ -1,5 +1,5 @@
 #include <solver/choose.hpp>
-#include <solver/node.hpp>
+#include <solver/sle.hpp>
 
 namespace minesweeper::solver {
     using minesweeper::Minesweeper;
@@ -46,18 +46,19 @@ namespace minesweeper::solver {
     };
 
     class AdvancedSolver {
-        std::set<std::pair<Node*, bool>> compare_sets(std::set<Node*> set1, int set1_mines, std::set<Node*> set2, int set2_mines);
-
     public:
         std::set<Node*> flaggable(SolverState state);
 
         std::set<Node*> safe(SolverState state);
-
-        std::set<std::pair<Node*, bool>> solve(SolverState state, int mines_left);
-
     };
 
     class ProbableSolver {
+        void print_probabilities(SolverState state);
+
+        static bool validate_assignments(sle::Assignments assignments);
+
+        sle::Assignments bruteforce(sle::SystemOfLinearEquations& sys_eq, const std::set<Node*>& ind_vars);
+
     public:
         void calculate_probability(SolverState state, int mines_left);
 

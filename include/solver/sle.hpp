@@ -1,40 +1,36 @@
+#include <solver/node.hpp>
 #include <boost/rational.hpp>
 #include <unordered_map>
-#include <vector>
-#include <set>
+#include <map>
 
 namespace minesweeper::solver::sle {
-    using fraction = boost::rational<int>;
-    using Equation = std::pair<std::unordered_map<unsigned int, fraction>, fraction>;
+    using Fraction = boost::rational<int>;
+    using Coefficients = std::map<Node*, Fraction>;
+    using Assignments = std::unordered_map<Node*, Fraction>;
+    using Equation = std::pair<Coefficients, Fraction>;
+    
 
     class SystemOfLinearEquations {
         std::vector<Equation> equations;
-        std::set<unsigned int> free_variables;
 
-        Equation subtract_equations(Equation left, Equation right);
+        static Equation subtract_equations(Equation left, Equation right);
 
-        Equation scale_equation(Equation equation, fraction scale);
-
-        std::pair<std::unordered_map<unsigned int, fraction>, bool> evaluate(unsigned int key, fraction value);
-
-        void convert_row_echelon();
-
-        void deduplicate();
+        static Equation scale_equation(Equation equation, Fraction scale);
 
     public:
-        SystemOfLinearEquations();
+        std::set<Node*> variables();
 
-        void add_equation(std::unordered_map<unsigned int, fraction> coefficients, fraction total);
+        std::set<Node*> independent_variables();
 
-        void add_equal(unsigned int key1, unsigned int key2);
+        void add_equation(Coefficients coefficients, Fraction total);
 
-        void set_equal(std::set<unsigned int> equal_set);
+        void add_equal(Node* var1, Node* var2);
 
-        void set_variable(unsigned int key, fraction value);
+        void convert_row_echelon();
+        
+        std::pair<Node*, Fraction> solve(Equation equation, const Assignments& assignments);
 
-        std::unordered_map<unsigned int, fraction> attempt_solve(fraction step);
-
-        unsigned int variable_count();
+        void evaluate(Assignments& assignments);
 
         void print();
     };

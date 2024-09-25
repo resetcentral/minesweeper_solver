@@ -7,12 +7,11 @@
 #include <iterator>
 #include <unordered_map>
 #include <map>
-#include <solver/sle.hpp>
 
 namespace minesweeper::solver {
     using minesweeper::Minesweeper;
 
-    using fraction = boost::rational<int>;
+    using Fraction = boost::rational<int>;
 
     SolverState::SolverState(const Minefield& minefield) {
         if (minefield.size() == 0 || minefield[0].size() == 0) {
@@ -202,78 +201,11 @@ namespace minesweeper::solver {
     }
 
     
-    // Advanced Solver
-    std::set<std::pair<Node*, bool>> AdvancedSolver::compare_sets(std::set<Node*> set1, int set1_mines, std::set<Node*> set2, int set2_mines) {
-        std::set<std::pair<Node*, bool>> definitive;
-
-        std::array<std::set<Node*>, 3> segments;
-        segments[1] = set_utils::set_intersection(set1, set2);
-        if (!segments[1].empty()) {
-            segments[0] = set_utils::set_difference(set1, set2);
-            segments[2] = set_utils::set_difference(set2, set1);
-
-            std::array<std::size_t, 3> counts{};
-            for (auto i = 0; i < segments.size(); i++) {
-                counts[i] = segments[i].size();
-            }
-
-            if (counts[0] > 8 || counts[2] > 8) {
-                return definitive;
-            }
-
-            auto running_total = 0;
-            std::array<int, 3> choose{ set1_mines, 0, set2_mines };
-            std::array<int, 3> picked{};
-            auto choose_table = choose_matrix<8,8>();
-            while (choose[0] >= 0 && choose[2] >= 0) {
-                auto total = 1;
-                for (auto i = 0; i < 3; i++) {
-                    total *= choose_table[counts[i]][choose[i]];
-                }
-                for (auto i = 0; i < 3; i++) {
-                    picked[i] += choose[i] * total;
-                }
-                running_total += total;
-                choose[0]--;
-                choose[1]++;
-                choose[2]--;
-            }
-
-            for (auto i = 0; i < 3; i++) {
-                auto segment = segments[i];
-                if (picked[i] == 0) {
-                    for (auto node : segment) {
-                        definitive.insert(std::pair{node, false});
-                    }
-                } else if (counts[i] > 0) {
-                    fraction probability{ picked[i] / counts[i] , running_total };
-                    for (auto node : segment) {
-                        if (probability == 1) {
-                            definitive.insert(std::pair{node, true});
-                        } else if (node->mine_probability().numerator() == 0) {
-                            node->set_mine_probability(probability);
-                        } else {
-                            fraction one{1, 1};
-                            auto old_probability = node->mine_probability();
-                            auto num = old_probability.numerator() * probability.numerator();
-                            auto den = ((one - old_probability).numerator() * (one - probability).numerator()) + num;
-
-                            fraction new_probability{num, den};
-                            node->set_mine_probability(new_probability);
-                        }
-                    }
-                }
-            }
-        }
-        
-        return definitive;
-    }
-
+    // AdvancedSolver
     std::set<Node*> AdvancedSolver::flaggable(SolverState state) {
         std::set<Node*> flag;
 
         auto num_edge = state.number_edge();
-
         for (auto node : num_edge) {
             auto node_mines = node->adjacent_mines_left();
             auto adjacent_covered = node->adjacent_covered();
@@ -287,16 +219,6 @@ namespace minesweeper::solver {
                         auto mines_diff = node_mines - adj_mines;
                         if (set_diff.size() == mines_diff) {
                             flag.merge(set_diff);
-                        } else if (set_diff.size() < mines_diff) {
-                            printf("Node (%d, %d): %d and Node (%d, %d): %d cannot coexist\n",
-                                node->coord().first,
-                                node->coord().second,
-                                node->value(),
-                                adj_num->coord().first,
-                                adj_num->coord().second,
-                                adj_num->value()
-                            );
-                            throw std::logic_error("Encountered impossible situation");
                         }
                     }
                 }
@@ -332,142 +254,121 @@ namespace minesweeper::solver {
         return safe_nodes;
     }
 
-    std::set<std::pair<Node*, bool>> AdvancedSolver::solve(SolverState state, int mines_left) {
-        std::set<std::pair<Node*, bool>> results;
 
-        auto num_edge = state.number_edge();
-        for (auto node1 : num_edge) {
-            for (auto node2 : num_edge) {
-                if (node1 == node2) {
-                    continue;
-                }
-
-                auto definitive = compare_sets(node1->adjacent_covered(),
-                    node1->adjacent_mines_left(),
-                    node2->adjacent_covered(),
-                    node2->adjacent_mines_left()
-                );
-                results.merge(definitive);
-                if (definitive.size() > 0) {
-                    return definitive;
-                }
-            }
-            // definitive = compare_sets(
-            //     node1->adjacent_covered(),
-            //     node1->adjacent_mines_left(),
-            //     state.covered(),
-            //     mines_left
-            // );
-            // if (definitive.size() > 0) {
-            //     throw std::logic_error("How did we get here?");
-            //     return definitive;
-            // }
-        }
-        auto covered_edge = state.covered_edge();
-        for (auto node : num_edge) {
-            auto covered = node->adjacent_covered();
-
-        }
-
-        return results;
-    }
-
-
-    // Least probable
+    // ProbableSolver
     void ProbableSolver::calculate_probability(SolverState state, int mines_left) {
-        auto covered_edge_nodes = state.covered_edge();
-        auto number_edge = state.number_edge();
+        // Create a system of linear equations like
+        // 2 = 1a + 1b + 1c + 1d 
+        // using adjacent mines and covered neighbors
         sle::SystemOfLinearEquations equations;
-        fraction total_probability{};
-
-        std::unordered_map<Node*, unsigned int> node_map;
-        auto i = 0;
-        for (auto node : covered_edge_nodes) {
-            node_map.insert({node, i});
-            i++;
-        }
-
-        std::map<std::multiset<std::pair<unsigned short, unsigned short>>, std::set<unsigned int>> equality_map{};
-        auto step = 1;
-
+        auto number_edge = state.number_edge();
         for (auto num_node : number_edge) {
             auto mines = num_node->adjacent_mines_left();
-            fraction total { mines };
-            std::unordered_map<unsigned int, fraction> coefficients;
+            Fraction total { mines };
+            sle::Coefficients coefficients;
 
             auto adj_covered = num_node->adjacent_covered();
             for (auto node : adj_covered) {
-                auto node_idx = node_map[node];
-                auto adj_nums = node->adjacent_active_numbers();
-                if (adj_nums.size() == 1) {
-                    auto neighbor_count = adj_covered.size();
-                    fraction p{ mines, neighbor_count };
-                    total -= p;
-                    node->set_mine_probability(p);
-                    total_probability += p;
-                    equations.set_variable(node_idx, p);
-                    
-                    if (neighbor_count > step) {
-                        step = neighbor_count;
-                    }
-                } else {
-                    std::multiset<std::pair<unsigned short, unsigned short>> attributes{};
-                    for (auto adj_num : adj_nums) {
-                        auto n = adj_num->adjacent_covered_count();
-                        auto k = adj_num->adjacent_mines_left();
-                        attributes.insert({n, k});
-                    }
-                    if (!equality_map.contains(attributes)) {
-                        equality_map.insert({attributes, {node_idx} });
-                    } else {
-                        equality_map[attributes].insert(node_idx);
-                    }
-                    coefficients.insert({ node_idx, 1});
-                }
-                
+                coefficients.insert({ node, 1});
             }
             equations.add_equation(coefficients, total);
         }
 
-        for (auto &[attributes, equal_set] : equality_map) {
-            equations.set_equal(equal_set);
-        }
+        // TODO how to incorporate sum(all_covered) = mines_left?
 
-        auto assignments = equations.attempt_solve(fraction{1, step});
+        // Bruteforce the possible values for the independent variables
+        auto ind_vars = equations.independent_variables();
+        auto assignments = bruteforce(equations, ind_vars);
+
+        // Set probabilities of edge nodes
+        auto covered_edge_nodes = state.covered_edge();
+        Fraction total_probability{};
         for (auto node : covered_edge_nodes) {
-            auto node_idx = node_map[node];
-            if (assignments.contains(node_idx)) {
-                node->set_mine_probability(assignments[node_idx]);
-                total_probability += assignments[node_idx];
+            if (assignments.contains(node)) {
+                node->set_mine_probability(assignments[node]);
+                total_probability += assignments[node];
             }
         }
 
+        // Set probabilities of non-edge nodes
         auto non_edge_covered = set_utils::set_difference(state.covered(), covered_edge_nodes);
         if (non_edge_covered.size() > 0) {
-            auto p = (mines_left - total_probability) / fraction{non_edge_covered.size()};
+            auto p = (mines_left - total_probability) / Fraction{non_edge_covered.size()};
 
             for (auto node : non_edge_covered) {
+                if (p > 1) { // hack due to not using sum(all_covered) = mines_left
+                    p = 1;
+                }
                 node->set_mine_probability(p);
             }
         }
     }
 
+    bool ProbableSolver::validate_assignments(sle::Assignments assignments) {
+        for (auto &[var, value] : assignments) {
+            if (value < 0 || value > 1) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    sle::Assignments ProbableSolver::bruteforce(sle::SystemOfLinearEquations& sys_eq, const std::set<Node*>& ind_vars) {
+        std::unordered_map<Node*, unsigned int> var_bit_map;
+        
+        std::unordered_map<Node*, Fraction> values_valid;
+
+        auto i = 0;
+        for (auto var : ind_vars) {
+            var_bit_map.insert({var, i});
+            values_valid.insert({var, 0});
+            i++;
+        }
+        auto sample = ind_vars.size() > 10;
+        printf("Calculating...\n");
+
+        auto max = 1UL << ind_vars.size();
+
+        std::mt19937_64 rng(std::random_device{}());
+        std::uniform_int_distribution<unsigned long> sample_dist(0, max);
+
+        auto total_valid = 0;
+        auto range_max = sample ? 1UL << 10 : max;
+        for (auto i = 0UL; i < range_max; i++) {
+            sle::Assignments assignments;
+            auto value = sample ? sample_dist(rng) : i;
+            for (auto var : ind_vars) {
+                assignments.insert({
+                    var,
+                    (i >> var_bit_map[var]) & 1
+                });
+            }
+            sys_eq.evaluate(assignments);
+            if (validate_assignments(assignments)) {
+                for (auto &[var, value] : assignments) {
+                    values_valid[var] += value;
+                }
+                total_valid++;
+            }
+        }
+        total_valid = total_valid > 0 ? total_valid : 1;
+
+        sle::Assignments assignments;
+        for (auto &[var, value] : values_valid) {
+            assignments.insert({
+                var,
+                value / total_valid
+            });
+        }
+        sys_eq.evaluate(assignments);
+
+        return assignments;
+    }
+
     Node* ProbableSolver::solve(SolverState state, int mines_left) {
         calculate_probability(state, mines_left);
 
-        printf("\n");
-        for (auto y = 0; y < state.height(); y++) {
-            for (auto x = 0; x < state.width(); x++) {
-                auto node = state.get_node(x, y);
-                if (node->value() == Minesweeper::COVERED) {
-                    printf("\x1b[32m"); // Green
-                }
-                printf("%5.2f", boost::rational_cast<double>(node->mine_probability()));
-                printf("\x1b[0m"); // Reset color
-            }
-            printf("\n");
-        }
-        printf("\n");
+        // print_probabilities(state);
 
         auto covered_nodes = state.covered();
         Node* least_probable = *covered_nodes.begin();
@@ -479,13 +380,28 @@ namespace minesweeper::solver {
         return least_probable;
     }
 
+    void ProbableSolver::print_probabilities(SolverState state) {
+        printf("\n");
+        for (auto y = 0; y < state.height(); y++) {
+            for (auto x = 0; x < state.width(); x++) {
+                auto node = state.get_node(x, y);
+                if (node->value() == Minesweeper::COVERED) {
+                    printf("\x1b[32m"); // Green
+                }
+                printf("%3d/%d", node->mine_probability().numerator(), node->mine_probability().denominator());
+                printf("\x1b[0m"); // Reset color
+            }
+            printf("\n");
+        }
+        printf("\n");
+    }
+
     
     // Main solver
     MinesweeperSolver::MinesweeperSolver(Minesweeper game, StateLogger logger)
         : game { game },
-          state { SolverState(game.get_field()) } {
-
-    }
+          state { SolverState(game.get_field()) },
+          logger { logger } {}
 
     void MinesweeperSolver::flag_or_uncover(Node* node, bool flag) {
         Minesweeper::GameState game_state;

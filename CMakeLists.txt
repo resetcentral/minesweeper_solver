@@ -27,55 +27,6 @@ add_library(
 )
 target_include_directories(minesweeper PUBLIC include/)
 
-target_compile_options(
-  minesweeper
-  PRIVATE
-  "-fprofile-instr-generate"
-  "-fcoverage-mapping"
-)
-
-add_executable(
-  generator
-  src/tests/generator.cpp
-)
-target_include_directories(generator PUBLIC include/)
-
-target_compile_options(
-  generator
-  PRIVATE
-  "-fprofile-instr-generate"
-  "-fcoverage-mapping"
-)
-
-target_link_libraries(
-  generator
-  minesweeper
-  GTest::gtest_main
-  "-fprofile-instr-generate"
-  "-fcoverage-mapping"
-)
-
-add_executable(
-  minesweeper_test
-  src/tests/minesweeper.cpp
-)
-target_include_directories(minesweeper_test PUBLIC include/)
-
-target_compile_options(
-  minesweeper_test
-  PRIVATE
-  "-fprofile-instr-generate"
-  "-fcoverage-mapping"
-)
-
-target_link_libraries(
-  minesweeper_test
-  minesweeper
-  GTest::gtest_main
-  "-fprofile-instr-generate"
-  "-fcoverage-mapping"
-)
-
 add_library(
   node
   include/solver/node.hpp
@@ -109,24 +60,43 @@ target_link_libraries(
   sle
   Boost::headers
 )
-target_include_directories(solver PUBLIC include/)
 
 add_executable(
-  solver_choose_test
-  src/tests/solver/choose.cpp
+  runner
+  src/runner.cpp
 )
-target_include_directories(solver_choose_test PUBLIC include/)
 target_link_libraries(
-  solver_choose_test
+  runner
+  solver
+)
+
+# Tests
+add_executable(
+  generator_test
+  src/tests/generator.cpp
+)
+
+target_link_libraries(
+  generator_test
+  minesweeper
   GTest::gtest_main
-  gmock_main
+)
+
+add_executable(
+  minesweeper_test
+  src/tests/minesweeper.cpp
+)
+
+target_link_libraries(
+  minesweeper_test
+  minesweeper
+  GTest::gtest_main
 )
 
 add_executable(
   solver_node_test
   src/tests/solver/node.cpp
 )
-target_include_directories(solver_node_test PUBLIC include/)
 
 target_link_libraries(
   solver_node_test
@@ -139,7 +109,6 @@ add_executable(
   solver_state_test
   src/tests/solver/solver_state.cpp
 )
-target_include_directories(solver_state_test PUBLIC include/)
 
 target_link_libraries(
   solver_state_test
@@ -152,7 +121,6 @@ add_executable(
   solver_test
   src/tests/solver/solver.cpp
 )
-target_include_directories(solver_test PUBLIC include/)
 
 target_link_libraries(
   solver_test
@@ -161,19 +129,10 @@ target_link_libraries(
   gmock_main
 )
 
-add_executable(
-  runner
-  src/runner.cpp
-)
-target_link_libraries(
-  runner
-  solver
-)
-
 include(GoogleTest)
-gtest_discover_tests(generator)
+gtest_discover_tests(generator_test)
 gtest_discover_tests(minesweeper_test)
-gtest_discover_tests(solver_choose_test)
 gtest_discover_tests(solver_node_test)
 gtest_discover_tests(solver_state_test)
 gtest_discover_tests(solver_test)
+

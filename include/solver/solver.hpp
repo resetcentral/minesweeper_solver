@@ -1,4 +1,3 @@
-#include <solver/choose.hpp>
 #include <solver/sle.hpp>
 
 namespace minesweeper::solver {

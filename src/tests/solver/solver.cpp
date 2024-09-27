@@ -11,10 +11,10 @@ using namespace minesweeper::solver;
 class SubSolverTest : public ::testing::Test {
 protected:
     minesweeper::Minefield init_field = {
-        { Minesweeper::COVERED, Minesweeper::COVERED, Minesweeper::COVERED },
-        { Minesweeper::COVERED, Minesweeper::COVERED, Minesweeper::COVERED },
-        { Minesweeper::COVERED, Minesweeper::COVERED, Minesweeper::COVERED },
-        { Minesweeper::COVERED, Minesweeper::COVERED, Minesweeper::COVERED }
+        { Tile::Covered, Tile::Covered, Tile::Covered },
+        { Tile::Covered, Tile::Covered, Tile::Covered },
+        { Tile::Covered, Tile::Covered, Tile::Covered },
+        { Tile::Covered, Tile::Covered, Tile::Covered }
     };
     BasicSolver basic;
     AdvancedSolver advanced;
@@ -33,10 +33,10 @@ TEST_F(SubSolverTest, BasicNoSafe) {
 
 TEST_F(SubSolverTest, BasicFlaggable) {
     minesweeper::Minefield basic_flag_field = {
-        { Minesweeper::COVERED, 2,                    Minesweeper::COVERED },
-        { Minesweeper::COVERED, Minesweeper::FLAG,    3 },
-        { Minesweeper::COVERED, Minesweeper::COVERED, 2 },
-        { Minesweeper::COVERED, 3,                    1 }
+        { Tile::Covered, Tile(2),       Tile::Covered },
+        { Tile::Covered, Tile::Flag,    Tile(3) },
+        { Tile::Covered, Tile::Covered, Tile(2) },
+        { Tile::Covered, Tile(3),       Tile(1) }
     };
     auto state = SolverState(basic_flag_field);
     auto flaggable = basic.flaggable(state);
@@ -50,10 +50,10 @@ TEST_F(SubSolverTest, BasicFlaggable) {
 
 TEST_F(SubSolverTest, BasicSafe) {
     minesweeper::Minefield basic_safe_field = {
-        { Minesweeper::FLAG,    2,                    Minesweeper::COVERED },
-        { 1,                    Minesweeper::COVERED, Minesweeper::COVERED },
-        { Minesweeper::COVERED, Minesweeper::COVERED, Minesweeper::COVERED },
-        { Minesweeper::FLAG,    2,                    Minesweeper::FLAG }
+        { Tile::Flag,    Tile(2),       Tile::Covered },
+        { Tile(1),       Tile::Covered, Tile::Covered },
+        { Tile::Covered, Tile::Covered, Tile::Covered },
+        { Tile::Flag,    Tile(2),       Tile::Flag }
     };
     auto state = SolverState(basic_safe_field);
     auto safe = basic.safe(state);
@@ -68,8 +68,8 @@ TEST_F(SubSolverTest, BasicSafe) {
 
 TEST_F(SubSolverTest, AdvancedSolve1Safe) {
     minesweeper::Minefield advanced_field = {
-        { 1,                    1,                    1 },
-        { Minesweeper::COVERED, Minesweeper::COVERED, Minesweeper::COVERED }
+        { Tile(1),       Tile(1),       Tile(1) },
+        { Tile::Covered, Tile::Covered, Tile::Covered }
     };
     auto state = SolverState(advanced_field);
     auto safe = advanced.safe(state);
@@ -82,9 +82,9 @@ TEST_F(SubSolverTest, AdvancedSolve1Safe) {
 
 TEST_F(SubSolverTest, AdvancedSolve3Safe) {
     minesweeper::Minefield advanced_field = {
-        { 1,                    Minesweeper::COVERED, Minesweeper::FLAG },
-        { Minesweeper::COVERED, 3,                    Minesweeper::COVERED },
-        { Minesweeper::COVERED, Minesweeper::COVERED, Minesweeper::FLAG }
+        { Tile(1),       Tile::Covered, Tile::Flag },
+        { Tile::Covered, Tile(3),       Tile::Covered },
+        { Tile::Covered, Tile::Covered, Tile::Flag }
     };
     auto state = SolverState(advanced_field);
     auto safe = advanced.safe(state);
@@ -98,9 +98,9 @@ TEST_F(SubSolverTest, AdvancedSolve3Safe) {
 
 TEST_F(SubSolverTest, AdvancedSolve2Flag) {
     minesweeper::Minefield advanced_field = {
-        { Minesweeper::COVERED, Minesweeper::COVERED, Minesweeper::COVERED },
-        { 4,                    Minesweeper::COVERED, 2 },
-        { Minesweeper::COVERED, Minesweeper::COVERED, Minesweeper::COVERED }
+        { Tile::Covered, Tile::Covered, Tile::Covered },
+        { Tile(4),       Tile::Covered, Tile(2) },
+        { Tile::Covered, Tile::Covered, Tile::Covered }
     };
     auto state = SolverState(advanced_field);
     auto flaggable = advanced.flaggable(state);
@@ -113,10 +113,10 @@ TEST_F(SubSolverTest, AdvancedSolve2Flag) {
 
 TEST_F(SubSolverTest, AdvancedSolveExistingFlag) {
     minesweeper::Minefield advanced_field = {
-        { Minesweeper::FLAG,    2,                    Minesweeper::COVERED },
-        { Minesweeper::COVERED, Minesweeper::COVERED, Minesweeper::COVERED },
-        { 4,                    Minesweeper::COVERED, Minesweeper::COVERED },
-        { Minesweeper::COVERED, Minesweeper::COVERED, Minesweeper::COVERED }
+        { Tile::Flag,    Tile(2),       Tile::Covered },
+        { Tile::Covered, Tile::Covered, Tile::Covered },
+        { Tile(4),       Tile::Covered, Tile::Covered },
+        { Tile::Covered, Tile::Covered, Tile::Covered }
     };
     auto state = SolverState(advanced_field);
     auto flaggable = advanced.flaggable(state);
@@ -130,10 +130,10 @@ TEST_F(SubSolverTest, AdvancedSolveExistingFlag) {
 
 TEST_F(SubSolverTest, AdvancedSolve2Safe) {
     minesweeper::Minefield advanced_field = {
-        { Minesweeper::COVERED, Minesweeper::COVERED, Minesweeper::COVERED },
-        { 3,                    Minesweeper::COVERED, 1 },
-        { Minesweeper::COVERED, Minesweeper::COVERED, Minesweeper::COVERED },
-        { Minesweeper::COVERED, Minesweeper::COVERED, Minesweeper::COVERED }
+        { Tile::Covered, Tile::Covered, Tile::Covered },
+        { Tile(3),       Tile::Covered, Tile(1) },
+        { Tile::Covered, Tile::Covered, Tile::Covered },
+        { Tile::Covered, Tile::Covered, Tile::Covered }
     };
     auto state = SolverState(advanced_field);
     auto safe = advanced.safe(state);
@@ -148,10 +148,10 @@ TEST_F(SubSolverTest, AdvancedSolve2Safe) {
 
 TEST_F(SubSolverTest, ProbableCalculate1LowMines) {
     minesweeper::Minefield probable_field = {
-        { Minesweeper::COVERED, 1,                    Minesweeper::COVERED },
-        { Minesweeper::COVERED, Minesweeper::COVERED, Minesweeper::COVERED },
-        { Minesweeper::COVERED, Minesweeper::COVERED, Minesweeper::COVERED },
-        { Minesweeper::COVERED, Minesweeper::COVERED, Minesweeper::COVERED }
+        { Tile::Covered, Tile(1),       Tile::Covered },
+        { Tile::Covered, Tile::Covered, Tile::Covered },
+        { Tile::Covered, Tile::Covered, Tile::Covered },
+        { Tile::Covered, Tile::Covered, Tile::Covered }
     };
     auto state = SolverState(probable_field);
     probable.calculate_probability(state, 3);
@@ -169,9 +169,9 @@ TEST_F(SubSolverTest, ProbableCalculate1LowMines) {
 
 TEST_F(SubSolverTest, ProbableCalculate) {
     minesweeper::Minefield probable_field = {
-        { Minesweeper::COVERED, 3,                    Minesweeper::FLAG },
-        { Minesweeper::COVERED, Minesweeper::COVERED, 2 },
-        { Minesweeper::FLAG,    Minesweeper::COVERED, 1 }
+        { Tile::Covered, Tile(3),       Tile::Flag },
+        { Tile::Covered, Tile::Covered, Tile(2) },
+        { Tile::Flag,    Tile::Covered, Tile(1) }
     };
     auto state = SolverState(probable_field);
 
@@ -187,9 +187,9 @@ TEST_F(SubSolverTest, ProbableCalculate) {
 
 TEST_F(SubSolverTest, ProbableCalculateHard) {
     minesweeper::Minefield probable_hard_field = {
-        { Minesweeper::COVERED, 2,                    Minesweeper::COVERED },
-        { Minesweeper::COVERED, Minesweeper::COVERED, 1 },
-        { Minesweeper::COVERED, 2,                    Minesweeper::COVERED }
+        { Tile::Covered, Tile(2),                    Tile::Covered },
+        { Tile::Covered, Tile::Covered, Tile(1) },
+        { Tile::Covered, Tile(2),                    Tile::Covered }
     };
     auto state = SolverState(probable_hard_field);
 
@@ -208,10 +208,10 @@ TEST_F(SubSolverTest, ProbableCalculateHard) {
 
 TEST_F(SubSolverTest, ProbableCalculateManyEquations) {
     minesweeper::Minefield probable_field = {
-        { Minesweeper::FLAG, 3,                    2,                    Minesweeper::FLAG },
-        { Minesweeper::FLAG, Minesweeper::COVERED, Minesweeper::COVERED, 2 },
-        { Minesweeper::FLAG, 4,                    Minesweeper::COVERED, Minesweeper::COVERED },
-        { 1,                 2,                    Minesweeper::COVERED, Minesweeper::COVERED }
+        { Tile::Flag, Tile(3),       Tile(2),       Tile::Flag },
+        { Tile::Flag, Tile::Covered, Tile::Covered, Tile(2) },
+        { Tile::Flag, Tile(4),       Tile::Covered, Tile::Covered },
+        { Tile(1),    Tile(2),       Tile::Covered, Tile::Covered }
     };
     auto state = SolverState(probable_field);
     probable.calculate_probability(state, 5);
@@ -227,10 +227,10 @@ TEST_F(SubSolverTest, ProbableCalculateManyEquations) {
 
 TEST_F(SubSolverTest, ProbableSolve1HighMines) {
     minesweeper::Minefield probable_field = {
-        { Minesweeper::COVERED, 1,                    Minesweeper::COVERED },
-        { Minesweeper::COVERED, Minesweeper::COVERED, Minesweeper::COVERED },
-        { Minesweeper::COVERED, Minesweeper::COVERED, Minesweeper::COVERED },
-        { Minesweeper::COVERED, Minesweeper::COVERED, Minesweeper::COVERED }
+        { Tile::Covered, Tile(1),       Tile::Covered },
+        { Tile::Covered, Tile::Covered, Tile::Covered },
+        { Tile::Covered, Tile::Covered, Tile::Covered },
+        { Tile::Covered, Tile::Covered, Tile::Covered }
     };
     auto state = SolverState(probable_field);
     auto safeish = probable.solve(state, 5);
@@ -243,9 +243,9 @@ TEST_F(SubSolverTest, ProbableSolve1HighMines) {
 
 TEST_F(SubSolverTest, ProbableSolveHard) {
     minesweeper::Minefield probable_hard_field = {
-        { Minesweeper::COVERED, 2,                    Minesweeper::COVERED },
-        { Minesweeper::COVERED, Minesweeper::COVERED, 1 },
-        { Minesweeper::COVERED, 2,                    Minesweeper::COVERED }
+        { Tile::Covered, Tile(2),       Tile::Covered },
+        { Tile::Covered, Tile::Covered, Tile(1) },
+        { Tile::Covered, Tile(2),       Tile::Covered }
     };
     auto state = SolverState(probable_hard_field);
 

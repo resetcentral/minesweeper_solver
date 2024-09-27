@@ -11,17 +11,17 @@ class SolverStateTest : public ::testing::Test {
 protected:
     SolverState* state;
     minesweeper::Minefield field_init = {
-        { Minesweeper::COVERED, Minesweeper::COVERED, Minesweeper::COVERED },
-        { Minesweeper::COVERED, Minesweeper::COVERED, Minesweeper::COVERED },
-        { Minesweeper::COVERED, Minesweeper::COVERED, Minesweeper::COVERED },
-        { Minesweeper::COVERED, Minesweeper::COVERED, Minesweeper::COVERED }
+        { Tile::Covered, Tile::Covered, Tile::Covered },
+        { Tile::Covered, Tile::Covered, Tile::Covered },
+        { Tile::Covered, Tile::Covered, Tile::Covered },
+        { Tile::Covered, Tile::Covered, Tile::Covered }
     };
 
     minesweeper::Minefield field2 = {
-        { 0, 1, Minesweeper::FLAG },
-        { 2, 3, Minesweeper::COVERED },
-        { Minesweeper::COVERED, Minesweeper::COVERED, Minesweeper::COVERED },
-        { Minesweeper::COVERED, Minesweeper::COVERED, Minesweeper::COVERED }
+        { Tile(0),       Tile(1),       Tile::Flag },
+        { Tile(2),       Tile(3),       Tile::Covered },
+        { Tile::Covered, Tile::Covered, Tile::Covered },
+        { Tile::Covered, Tile::Covered, Tile::Covered }
     };
 
     virtual void SetUp() {
@@ -62,10 +62,10 @@ TEST_F(SolverStateTest, NumberEdgeInitial) {
 TEST_F(SolverStateTest, Update) {
     auto node = state->get_node(0, 0);
 
-    EXPECT_EQ(node->value(), Minesweeper::COVERED);
-    EXPECT_EQ(state->get_node(0, 1)->value(), Minesweeper::COVERED);
-    EXPECT_EQ(state->get_node(1, 0)->value(), Minesweeper::COVERED);
-    EXPECT_EQ(state->get_node(1, 1)->value(), Minesweeper::COVERED);
+    EXPECT_EQ(node->value(), Tile::Covered);
+    EXPECT_EQ(state->get_node(0, 1)->value(), Tile::Covered);
+    EXPECT_EQ(state->get_node(1, 0)->value(), Tile::Covered);
+    EXPECT_EQ(state->get_node(1, 1)->value(), Tile::Covered);
 
     state->update(node, field2);
 
@@ -80,11 +80,11 @@ TEST_F(SolverStateTest, UpdateFlag) {
     auto flag = state->get_node(0, 2);
     state->update(node, field2);
 
-    EXPECT_EQ(flag->value(), Minesweeper::COVERED);
+    EXPECT_EQ(flag->value(), Tile::Covered);
 
     state->update(flag, field2);
 
-    EXPECT_EQ(flag->value(), Minesweeper::FLAG);
+    EXPECT_EQ(flag->value(), Tile::Flag);
     EXPECT_EQ(state->get_node(0, 1)->adjacent_mines_left(), 0);
     EXPECT_EQ(state->get_node(1, 1)->adjacent_mines_left(), 2);
 }
@@ -123,9 +123,9 @@ TEST_F(SolverStateTest, ConstructorCoords) {
 }
 
 TEST_F(SolverStateTest, ConstructorInitialValues) {
-    EXPECT_EQ(state->get_node(0, 0)->value(), Minesweeper::COVERED);
-    EXPECT_EQ(state->get_node(2, 2)->value(), Minesweeper::COVERED);
-    EXPECT_EQ(state->get_node(3, 2)->value(), Minesweeper::COVERED);
+    EXPECT_EQ(state->get_node(0, 0)->value(), Tile::Covered);
+    EXPECT_EQ(state->get_node(2, 2)->value(), Tile::Covered);
+    EXPECT_EQ(state->get_node(3, 2)->value(), Tile::Covered);
 }
 
 TEST_F(SolverStateTest, ConstructorAdjacentCount) {
@@ -156,12 +156,12 @@ TEST_F(SolverStateTest, ConstructorPartialMinefield) {
     auto partialState = SolverState(field2);
     EXPECT_EQ(partialState.get_node(0, 0)->value(), 0);
     EXPECT_EQ(partialState.get_node(0, 1)->value(), 1);
-    EXPECT_EQ(partialState.get_node(0, 2)->value(), Minesweeper::FLAG);
+    EXPECT_EQ(partialState.get_node(0, 2)->value(), Tile::Flag);
     EXPECT_EQ(partialState.get_node(1, 0)->value(), 2);
     EXPECT_EQ(partialState.get_node(1, 1)->value(), 3);
-    EXPECT_EQ(partialState.get_node(1, 2)->value(), Minesweeper::COVERED);
-    EXPECT_EQ(partialState.get_node(2, 0)->value(), Minesweeper::COVERED);
-    EXPECT_EQ(partialState.get_node(2, 1)->value(), Minesweeper::COVERED);
+    EXPECT_EQ(partialState.get_node(1, 2)->value(), Tile::Covered);
+    EXPECT_EQ(partialState.get_node(2, 0)->value(), Tile::Covered);
+    EXPECT_EQ(partialState.get_node(2, 1)->value(), Tile::Covered);
 }
 
 TEST_F(SolverStateTest, ConstructorPartialAdjacentMines) {

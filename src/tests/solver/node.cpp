@@ -93,13 +93,13 @@ TEST_F(NodeTest, Setup) {
 }
 
 TEST_F(NodeTest, SetValueCovered) {
-    nodes[1][1]->set_value(Minesweeper::COVERED);
-    EXPECT_EQ(nodes[1][1]->value(), Minesweeper::COVERED);
+    nodes[1][1]->set_value(Tile::Covered);
+    EXPECT_EQ(nodes[1][1]->value(), Tile::Covered);
 }
 
 TEST_F(NodeTest, SetValueFlag) {
-    nodes[1][1]->set_value(Minesweeper::FLAG);
-    EXPECT_EQ(nodes[1][1]->value(), Minesweeper::FLAG);
+    nodes[1][1]->set_value(Tile::Flag);
+    EXPECT_EQ(nodes[1][1]->value(), Tile::Flag);
     EXPECT_EQ(nodes[1][1]->mine_probability(), 1);
 }
 
@@ -123,15 +123,15 @@ TEST_F(NodeTest, SetValueFlagAdjacentNum) {
     EXPECT_EQ(nodes[0][0]->adjacent_mines_left(), 2);
     EXPECT_EQ(nodes[2][1]->adjacent_mines_left(), 4);
 
-    nodes[1][1]->set_value(Minesweeper::FLAG);
+    nodes[1][1]->set_value(Tile::Flag);
 
     EXPECT_EQ(nodes[0][0]->adjacent_mines_left(), 1);
     EXPECT_EQ(nodes[2][1]->adjacent_mines_left(), 3);
 }
 
 TEST_F(NodeTest, SetValueNumAdjacentFlag) {
-    nodes[0][0]->set_value(Minesweeper::FLAG);
-    nodes[2][1]->set_value(Minesweeper::FLAG);
+    nodes[0][0]->set_value(Tile::Flag);
+    nodes[2][1]->set_value(Tile::Flag);
     nodes[1][1]->set_value(3);
 
     EXPECT_EQ(nodes[1][1]->adjacent_mines_left(), 1);
@@ -203,7 +203,7 @@ TEST_F(NodeTest, CoveredSafe) {
     */
     nodes[0][0]->set_value(2);
     nodes[2][1]->set_value(1);
-    nodes[1][0]->set_value(Minesweeper::FLAG);
+    nodes[1][0]->set_value(Tile::Flag);
 
     EXPECT_FALSE(nodes[0][0]->covered_safe());
     EXPECT_FALSE(nodes[0][1]->covered_safe());

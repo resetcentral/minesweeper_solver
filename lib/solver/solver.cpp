@@ -70,7 +70,7 @@ namespace minesweeper::solver {
         std::set<Node*> covered;
         for (auto x = 0; x < state.size(); x++) {
             for (auto y = 0; y < state[x].size(); y++) {
-                if (state[x][y]->value() == Minesweeper::COVERED) {
+                if (state[x][y]->value() == Tile::Covered) {
                     covered.insert(state[x][y]);
                 }
             }
@@ -109,7 +109,7 @@ namespace minesweeper::solver {
         node->set_value(value);
         if (value == 0) {
             for (auto adjacent_tile : node->adjacent()) {
-                if (adjacent_tile->value() == Minesweeper::COVERED) {
+                if (adjacent_tile->value() == Tile::Covered) {
                     update(adjacent_tile, minefield);
                 }
             }
@@ -145,13 +145,13 @@ namespace minesweeper::solver {
 
                 auto value = state.get_node(x, y)->value();
                 switch (value) {
-                    case Minesweeper::MINE:
+                    case Tile::Mine:
                         printf("* ");
                         break;
-                    case Minesweeper::FLAG:
+                    case Tile::Flag:
                         printf("f ");
                         break;
-                    case Minesweeper::COVERED:
+                    case Tile::Covered:
                         printf("O ");
                         break;
                     case 0:
@@ -179,7 +179,7 @@ namespace minesweeper::solver {
         for (auto hint : hint_edge) {
             if (hint->adjacent_covered_count() == hint->adjacent_mines_left()) {
                 for (auto adj_node: hint->adjacent()) {
-                    if (adj_node->value() == Minesweeper::COVERED) {
+                    if (adj_node->value() == Tile::Covered) {
                         flaggable_nodes.insert(adj_node);
                     }
                 }
@@ -385,7 +385,7 @@ namespace minesweeper::solver {
         for (auto y = 0; y < state.height(); y++) {
             for (auto x = 0; x < state.width(); x++) {
                 auto node = state.get_node(x, y);
-                if (node->value() == Minesweeper::COVERED) {
+                if (node->value() == Tile::Covered) {
                     printf("\x1b[32m"); // Green
                 }
                 printf("%3d/%d", node->mine_probability().numerator(), node->mine_probability().denominator());

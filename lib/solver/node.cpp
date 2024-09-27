@@ -3,7 +3,7 @@
 
 
 namespace minesweeper::solver {
-    using minesweeper::Minesweeper;
+    using minesweeper::Tile;
 
     Node::Node(unsigned int x, unsigned int y)
         : _coord { x, y } {}
@@ -19,7 +19,7 @@ namespace minesweeper::solver {
     void Node::set_value(const unsigned short value) {
         _value = value;
 
-        if (value == Minesweeper::FLAG) {
+        if (value == Tile::Flag) {
             set_mine_probability(1);
             for (auto node : _adjacent) {
                 if (node->is_hint()) {
@@ -30,7 +30,7 @@ namespace minesweeper::solver {
             set_mine_probability(0);
             _adjacent_mines_left = value;
             for (auto node : _adjacent) {
-                if (node->value() == Minesweeper::FLAG) {
+                if (node->value() == Tile::Flag) {
                     _adjacent_mines_left--;
                 }
             }
@@ -50,7 +50,7 @@ namespace minesweeper::solver {
     std::set<Node*> Node::adjacent_covered() const {
         std::set<Node*> covered;
         for (auto node : _adjacent) {
-            if (node->value() == Minesweeper::COVERED) {
+            if (node->value() == Tile::Covered) {
                 covered.insert(node);
             }
         }
@@ -60,7 +60,7 @@ namespace minesweeper::solver {
     unsigned int Node::adjacent_covered_count() const {
         unsigned int count = 0;
         for (auto node : _adjacent) {
-            if (node->value() == Minesweeper::COVERED) {
+            if (node->value() == Tile::Covered) {
                 count++;
             }
         }
@@ -98,7 +98,7 @@ namespace minesweeper::solver {
     }
 
     bool Node::covered_edge() const {
-        if (_value == Minesweeper::COVERED) {
+        if (_value == Tile::Covered) {
             for (auto node : _adjacent) {
                 if (node->is_hint()) {
                     return true;
@@ -111,7 +111,7 @@ namespace minesweeper::solver {
     bool Node::hint_edge() const {
         if (is_hint()) {
             for (auto node : _adjacent) {
-                if (node->value() == Minesweeper::COVERED) {
+                if (node->value() == Tile::Covered) {
                     return true;
                 }
             }
@@ -120,7 +120,7 @@ namespace minesweeper::solver {
     }
 
     bool Node::covered_safe() const {
-        if (_value != Minesweeper::COVERED) {
+        if (_value != Tile::Covered) {
             return false;
         }
 

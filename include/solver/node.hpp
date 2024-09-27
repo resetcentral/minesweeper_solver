@@ -3,7 +3,7 @@
 #include <set>
 
 namespace minesweeper::solver {
-    using minesweeper::Minesweeper;
+    using minesweeper::Tile;
     using Fraction = boost::rational<int>;
 
     /**
@@ -12,7 +12,7 @@ namespace minesweeper::solver {
      */
     class Node {
         const std::pair<unsigned int, unsigned int> _coord;
-        unsigned short _value = Minesweeper::COVERED;
+        unsigned short _value = Tile::Covered;
         std::set<Node*> _adjacent{};
         Fraction _mine_probability{};
         unsigned short _adjacent_mines_left = 0;

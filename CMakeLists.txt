@@ -19,6 +19,9 @@ find_package(Boost
 
 enable_testing()
 
+include(code-coverage.cmake)
+add_code_coverage()
+
 add_library(
   minesweeper
   STATIC
@@ -75,7 +78,6 @@ add_executable(
   generator_test
   src/tests/generator.cpp
 )
-
 target_link_libraries(
   generator_test
   minesweeper
@@ -86,7 +88,6 @@ add_executable(
   minesweeper_test
   src/tests/minesweeper.cpp
 )
-
 target_link_libraries(
   minesweeper_test
   minesweeper
@@ -94,10 +95,20 @@ target_link_libraries(
 )
 
 add_executable(
+  solver_sle_test
+  src/tests/solver/sle.cpp
+)
+target_link_libraries(
+  solver_sle_test
+  node
+  GTest::gtest_main
+  gmock_main
+)
+
+add_executable(
   solver_node_test
   src/tests/solver/node.cpp
 )
-
 target_link_libraries(
   solver_node_test
   node
@@ -109,7 +120,6 @@ add_executable(
   solver_state_test
   src/tests/solver/solver_state.cpp
 )
-
 target_link_libraries(
   solver_state_test
   solver
@@ -121,7 +131,6 @@ add_executable(
   solver_test
   src/tests/solver/solver.cpp
 )
-
 target_link_libraries(
   solver_test
   solver
@@ -132,7 +141,13 @@ target_link_libraries(
 include(GoogleTest)
 gtest_discover_tests(generator_test)
 gtest_discover_tests(minesweeper_test)
+gtest_discover_tests(solver_sle_test)
 gtest_discover_tests(solver_node_test)
 gtest_discover_tests(solver_state_test)
 gtest_discover_tests(solver_test)
 
+target_code_coverage(generator_test)
+target_code_coverage(minesweeper_test)
+target_code_coverage(solver_node_test)
+target_code_coverage(solver_state_test)
+target_code_coverage(solver_test)

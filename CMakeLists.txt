@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.18)
 project(minesweeper)
 
 set(CMAKE_CXX_STANDARD 20)
@@ -13,7 +13,14 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(googletest)
 
+find_package(Boost
+  1.86.0
+  COMPONENTS headers)
+
 enable_testing()
+
+include(code-coverage.cmake)
+add_code_coverage()
 
 add_library(
   minesweeper
@@ -23,65 +30,124 @@ add_library(
 )
 target_include_directories(minesweeper PUBLIC include/)
 
-target_compile_options(
+add_library(
+  node
+  include/solver/node.hpp
+  lib/solver/node.cpp
+)
+target_link_libraries(
+  node
   minesweeper
-  PRIVATE
-  "-fprofile-instr-generate"
-  "-fcoverage-mapping"
+  Boost::headers
+)
+
+add_library(
+  sle
+  include/solver/sle.hpp
+  lib/solver/sle.cpp
+)
+target_link_libraries(
+  sle
+  Boost::headers
+)
+target_include_directories(sle PUBLIC include/)
+
+add_library(
+  solver
+  include/solver/solver.hpp
+  lib/solver/solver.cpp
+)
+target_link_libraries(
+  solver
+  node
+  sle
+  Boost::headers
 )
 
 add_executable(
-  generator
+  runner
+  src/runner.cpp
+)
+target_link_libraries(
+  runner
+  solver
+)
+
+# Tests
+add_executable(
+  generator_test
   src/tests/generator.cpp
 )
-target_include_directories(generator PUBLIC include/)
-
-target_compile_options(
-  generator
-  PRIVATE
-  "-fprofile-instr-generate"
-  "-fcoverage-mapping"
-)
-
 target_link_libraries(
-  generator
+  generator_test
   minesweeper
   GTest::gtest_main
-  "-fprofile-instr-generate"
-  "-fcoverage-mapping"
 )
 
 add_executable(
   minesweeper_test
   src/tests/minesweeper.cpp
 )
-target_include_directories(minesweeper_test PUBLIC include/)
-
-target_compile_options(
-  minesweeper_test
-  PRIVATE
-  "-fprofile-instr-generate"
-  "-fcoverage-mapping"
-)
-
 target_link_libraries(
   minesweeper_test
   minesweeper
   GTest::gtest_main
-  "-fprofile-instr-generate"
-  "-fcoverage-mapping"
 )
 
 add_executable(
-  solver
-  src/solver.cpp
+  solver_sle_test
+  src/tests/solver/sle.cpp
 )
-target_include_directories(generator PUBLIC include/)
 target_link_libraries(
+  solver_sle_test
+  node
+  GTest::gtest_main
+  gmock_main
+)
+
+add_executable(
+  solver_node_test
+  src/tests/solver/node.cpp
+)
+target_link_libraries(
+  solver_node_test
+  node
+  GTest::gtest_main
+  gmock_main
+)
+
+add_executable(
+  solver_state_test
+  src/tests/solver/solver_state.cpp
+)
+target_link_libraries(
+  solver_state_test
   solver
-  minesweeper
+  GTest::gtest_main
+  gmock_main
+)
+
+add_executable(
+  solver_test
+  src/tests/solver/solver.cpp
+)
+target_link_libraries(
+  solver_test
+  solver
+  GTest::gtest_main
+  gmock_main
 )
 
 include(GoogleTest)
-gtest_discover_tests(generator)
+gtest_discover_tests(generator_test)
 gtest_discover_tests(minesweeper_test)
+gtest_discover_tests(solver_sle_test)
+gtest_discover_tests(solver_node_test)
+gtest_discover_tests(solver_state_test)
+gtest_discover_tests(solver_test)
+
+target_code_coverage(generator_test)
+target_code_coverage(minesweeper_test)
+target_code_coverage(solver_node_test)
+target_code_coverage(solver_state_test)
+target_code_coverage(solver_test)

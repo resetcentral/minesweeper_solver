@@ -4,11 +4,11 @@
 using namespace minesweeper;
 
 TEST(MinesweeperConstructor, InvalidDimensionsWidth) {
-    EXPECT_THROW(Minesweeper(0, 5, 2), std::domain_error);
+    EXPECT_THROW(Minesweeper(0, 5, 2), std::invalid_argument);
 }
 
 TEST(MinesweeperConstructor, InvalidDimensionsHeight) {
-    EXPECT_THROW(Minesweeper(3, 0, 2), std::domain_error);
+    EXPECT_THROW(Minesweeper(3, 0, 2), std::invalid_argument);
 }
 
 TEST(MinesweeperConstructor, TooManyMinesEq) {
@@ -61,7 +61,7 @@ class MinesweeperTest : public ::testing::Test {
 TEST_F(MinesweeperTest, GetTileStartCovered) {
     for (auto x = 0; x < 9; x++) {
         for (auto y = 0; y < 12; y++) {
-            EXPECT_EQ(game->get_tile(x, y), Minesweeper::COVERED);
+            EXPECT_EQ(game->get_tile(x, y), Tile::Covered);
         }
     }
 }
@@ -83,45 +83,45 @@ TEST_F(MinesweeperTest, ToggleFlagOutOfBoundsY) {
 }
 
 TEST_F(MinesweeperTest, ToggleFlagOnAndOff) {
-    EXPECT_EQ(game->get_tile(0, 0), Minesweeper::COVERED);
+    EXPECT_EQ(game->get_tile(0, 0), Tile::Covered);
     EXPECT_EQ(game->flags_placed_count(), 0);
     game->toggle_flag(0, 0);
-    EXPECT_EQ(game->get_tile(0, 0), Minesweeper::FLAG);
+    EXPECT_EQ(game->get_tile(0, 0), Tile::Flag);
     EXPECT_EQ(game->flags_placed_count(), 1);
 
     game->toggle_flag(0, 0);
-    EXPECT_EQ(game->get_tile(0, 0), Minesweeper::COVERED);
+    EXPECT_EQ(game->get_tile(0, 0), Tile::Covered);
     EXPECT_EQ(game->flags_placed_count(), 0);
 }
 
 TEST_F(MinesweeperTest, ToggleFlagMultiFlag) {
-    EXPECT_EQ(game->get_tile(1, 5), Minesweeper::COVERED);
-    EXPECT_EQ(game->get_tile(3, 7), Minesweeper::COVERED);
-    EXPECT_EQ(game->get_tile(8, 2), Minesweeper::COVERED);
+    EXPECT_EQ(game->get_tile(1, 5), Tile::Covered);
+    EXPECT_EQ(game->get_tile(3, 7), Tile::Covered);
+    EXPECT_EQ(game->get_tile(8, 2), Tile::Covered);
     EXPECT_EQ(game->flags_placed_count(), 0);
 
     game->toggle_flag(1, 5);
-    EXPECT_EQ(game->get_tile(1, 5), Minesweeper::FLAG);
+    EXPECT_EQ(game->get_tile(1, 5), Tile::Flag);
     EXPECT_EQ(game->flags_placed_count(), 1);
 
     game->toggle_flag(3, 7);
-    EXPECT_EQ(game->get_tile(3, 7), Minesweeper::FLAG);
+    EXPECT_EQ(game->get_tile(3, 7), Tile::Flag);
     EXPECT_EQ(game->flags_placed_count(), 2);    
 
     game->toggle_flag(8, 2);
-    EXPECT_EQ(game->get_tile(8, 2), Minesweeper::FLAG);
+    EXPECT_EQ(game->get_tile(8, 2), Tile::Flag);
     EXPECT_EQ(game->flags_placed_count(), 3);
 
     game->toggle_flag(3, 7);
-    EXPECT_EQ(game->get_tile(3, 7), Minesweeper::COVERED);
+    EXPECT_EQ(game->get_tile(3, 7), Tile::Covered);
     EXPECT_EQ(game->flags_placed_count(), 2);  
 
     game->toggle_flag(1, 5);
-    EXPECT_EQ(game->get_tile(1, 5), Minesweeper::COVERED);
+    EXPECT_EQ(game->get_tile(1, 5), Tile::Covered);
     EXPECT_EQ(game->flags_placed_count(), 1);
 
     game->toggle_flag(8, 2);
-    EXPECT_EQ(game->get_tile(8, 2), Minesweeper::COVERED);
+    EXPECT_EQ(game->get_tile(8, 2), Tile::Covered);
     EXPECT_EQ(game->flags_placed_count(), 0);
 }
 
@@ -136,7 +136,7 @@ TEST_F(MinesweeperTest, UncoverTileOutOfBoundsY) {
 TEST_F(MinesweeperTest, UncoverTileMine) {
     EXPECT_EQ(game->covered_tiles_count(), init_covered_tiles);
     EXPECT_EQ(game->uncover_tile(7, 0), Minesweeper::GameState::Lose);
-    EXPECT_EQ(game->get_tile(7, 0), Minesweeper::MINE);
+    EXPECT_EQ(game->get_tile(7, 0), Tile::Mine);
     EXPECT_EQ(game->covered_tiles_count(), init_covered_tiles-1);
 }
 

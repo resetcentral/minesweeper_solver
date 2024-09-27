@@ -12,11 +12,11 @@ namespace minesweeper::solver {
         return _coord;
     }
 
-    unsigned short Node::value() const {
+    Tile Node::value() const {
         return _value;
     }
 
-    void Node::set_value(const unsigned short value) {
+    void Node::set_value(const Tile value) {
         _value = value;
 
         if (value == Tile::Flag) {
@@ -94,7 +94,7 @@ namespace minesweeper::solver {
     }
 
     bool Node::is_hint() const {
-        return _value >= 0 && _value <= 8;
+        return _value <= Tile::HintMax && _value >= Tile::HintMin;
     }
 
     bool Node::covered_edge() const {

@@ -185,13 +185,15 @@ namespace minesweeper {
             case Tile::Covered: {
                 visible[x][y] = Tile::Flag;
                 flags_placed++;
-                break;
             }
+                break;
             case Tile::Flag: {
                 visible[x][y] = Tile::Covered;
                 flags_placed--;
-                break;
             }
+                break;
+            default:
+                break;
             // Ignore if any other value
         }
     }

@@ -12,7 +12,7 @@ namespace minesweeper::solver {
      */
     class Node {
         const std::pair<unsigned int, unsigned int> _coord;
-        unsigned short _value = Tile::Covered;
+        Tile _value = Tile::Covered;
         std::set<Node*> _adjacent{};
         Fraction _mine_probability{};
         unsigned short _adjacent_mines_left = 0;
@@ -46,14 +46,14 @@ namespace minesweeper::solver {
          * 
          * @returns the value of the node
          */
-        unsigned short value() const;
+        Tile value() const;
 
         /**
          * Set the value of this Node to the given value.
          * 
          * @param value the value to set
          */
-        void set_value(const unsigned short value);
+        void set_value(const Tile value);
         
 
         /**

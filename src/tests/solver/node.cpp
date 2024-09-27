@@ -104,7 +104,7 @@ TEST_F(NodeTest, SetValueFlag) {
 }
 
 TEST_F(NodeTest, SetValueNum) {
-    nodes[1][1]->set_value(3);
+    nodes[1][1]->set_value(Tile(3));
     EXPECT_EQ(nodes[1][1]->value(), 3);
     EXPECT_EQ(nodes[1][1]->mine_probability(), 0);
     EXPECT_EQ(nodes[1][1]->adjacent_mines_left(), 3);
@@ -112,13 +112,13 @@ TEST_F(NodeTest, SetValueNum) {
 
 TEST_F(NodeTest, SetValueIsHint) {
     EXPECT_FALSE(nodes[1][1]->is_hint());
-    nodes[1][1]->set_value(3);
+    nodes[1][1]->set_value(Tile(3));
     EXPECT_TRUE(nodes[1][1]->is_hint());
 }
 
 TEST_F(NodeTest, SetValueFlagAdjacentNum) {
-    nodes[0][0]->set_value(2);
-    nodes[2][1]->set_value(4);
+    nodes[0][0]->set_value(Tile(2));
+    nodes[2][1]->set_value(Tile(4));
 
     EXPECT_EQ(nodes[0][0]->adjacent_mines_left(), 2);
     EXPECT_EQ(nodes[2][1]->adjacent_mines_left(), 4);
@@ -132,15 +132,15 @@ TEST_F(NodeTest, SetValueFlagAdjacentNum) {
 TEST_F(NodeTest, SetValueNumAdjacentFlag) {
     nodes[0][0]->set_value(Tile::Flag);
     nodes[2][1]->set_value(Tile::Flag);
-    nodes[1][1]->set_value(3);
+    nodes[1][1]->set_value(Tile(3));
 
     EXPECT_EQ(nodes[1][1]->adjacent_mines_left(), 1);
 }
 
 TEST_F(NodeTest, AdjacentCovered) {
-    nodes[1][0]->set_value(3);
-    nodes[0][1]->set_value(2);
-    nodes[1][2]->set_value(5);
+    nodes[1][0]->set_value(Tile(3));
+    nodes[0][1]->set_value(Tile(2));
+    nodes[1][2]->set_value(Tile(5));
 
     EXPECT_THAT(nodes[0][0]->adjacent_covered(), 
         UnorderedElementsAre(nodes[1][1]));
@@ -153,9 +153,9 @@ TEST_F(NodeTest, AdjacentCovered) {
 }
 
 TEST_F(NodeTest, AdjacentCoveredCount) {
-    nodes[1][0]->set_value(3);
-    nodes[0][1]->set_value(2);
-    nodes[1][2]->set_value(5);
+    nodes[1][0]->set_value(Tile(3));
+    nodes[0][1]->set_value(Tile(2));
+    nodes[1][2]->set_value(Tile(5));
 
     EXPECT_EQ(nodes[0][0]->adjacent_covered_count(), 1);
     EXPECT_EQ(nodes[2][0]->adjacent_covered_count(), 2);
@@ -163,9 +163,9 @@ TEST_F(NodeTest, AdjacentCoveredCount) {
 }
 
 TEST_F(NodeTest, CoveredEdge) {
-    nodes[0][0]->set_value(1);
-    nodes[0][1]->set_value(1);
-    nodes[1][0]->set_value(1);
+    nodes[0][0]->set_value(Tile(1));
+    nodes[0][1]->set_value(Tile(1));
+    nodes[1][0]->set_value(Tile(1));
     
     EXPECT_FALSE(nodes[0][0]->covered_edge());
     EXPECT_FALSE(nodes[0][1]->covered_edge());
@@ -179,10 +179,10 @@ TEST_F(NodeTest, CoveredEdge) {
 }
 
 TEST_F(NodeTest, NumberEdge) {
-    nodes[0][0]->set_value(1);
-    nodes[0][1]->set_value(1);
-    nodes[1][0]->set_value(1);
-    nodes[1][1]->set_value(1);
+    nodes[0][0]->set_value(Tile(1));
+    nodes[0][1]->set_value(Tile(1));
+    nodes[1][0]->set_value(Tile(1));
+    nodes[1][1]->set_value(Tile(1));
     
     EXPECT_FALSE(nodes[0][0]->hint_edge());
     EXPECT_TRUE(nodes[0][1]->hint_edge());
@@ -201,8 +201,8 @@ TEST_F(NodeTest, CoveredSafe) {
      * O O 1
      * O O O
     */
-    nodes[0][0]->set_value(2);
-    nodes[2][1]->set_value(1);
+    nodes[0][0]->set_value(Tile(2));
+    nodes[2][1]->set_value(Tile(1));
     nodes[1][0]->set_value(Tile::Flag);
 
     EXPECT_FALSE(nodes[0][0]->covered_safe());

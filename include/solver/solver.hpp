@@ -16,7 +16,7 @@ namespace minesweeper::solver {
 
         std::set<Node*> covered();
 
-        std::set<Node*> number_edge();
+        std::set<Node*> hint_edge();
 
         std::set<Node*> covered_edge();
 

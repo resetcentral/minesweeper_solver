@@ -78,11 +78,11 @@ namespace minesweeper::solver {
         return covered;
     }
 
-    std::set<Node*> SolverState::number_edge() {
+    std::set<Node*> SolverState::hint_edge() {
         std::set<Node*> edge_set;
         for (auto x = 0; x < state.size(); x++) {
             for (auto y = 0; y < state[x].size(); y++) {
-                if (state[x][y]->number_edge()) {
+                if (state[x][y]->hint_edge()) {
                     edge_set.insert(state[x][y]);
                 }
             }
@@ -175,10 +175,10 @@ namespace minesweeper::solver {
     std::set<Node*> BasicSolver::flaggable(SolverState state) {
         std::set<Node*> flaggable_nodes;
 
-        auto num_edge = state.number_edge();
-        for (auto node : num_edge) {
-            if (node->adjacent_covered_count() == node->adjacent_mines_left()) {
-                for (auto adj_node: node->adjacent()) {
+        auto hint_edge = state.hint_edge();
+        for (auto hint : hint_edge) {
+            if (hint->adjacent_covered_count() == hint->adjacent_mines_left()) {
+                for (auto adj_node: hint->adjacent()) {
                     if (adj_node->value() == Minesweeper::COVERED) {
                         flaggable_nodes.insert(adj_node);
                     }
@@ -205,17 +205,17 @@ namespace minesweeper::solver {
     std::set<Node*> AdvancedSolver::flaggable(SolverState state) {
         std::set<Node*> flag;
 
-        auto num_edge = state.number_edge();
-        for (auto node : num_edge) {
-            auto node_mines = node->adjacent_mines_left();
-            auto adjacent_covered = node->adjacent_covered();
+        auto hint_edge = state.hint_edge();
+        for (auto hint : hint_edge) {
+            auto node_mines = hint->adjacent_mines_left();
+            auto adjacent_covered = hint->adjacent_covered();
             for (auto adj_node : adjacent_covered) {
-                auto adj_nums = adj_node->adjacent_active_numbers();
-                for (auto adj_num : adj_nums) {
-                    auto adj_mines = adj_num->adjacent_mines_left();
+                auto adj_hints = adj_node->adjacent_active_hints();
+                for (auto adj_hint : adj_hints) {
+                    auto adj_mines = adj_hint->adjacent_mines_left();
                     if (node_mines >  adj_mines) {
-                        auto adj_num_adj_covered = adj_num->adjacent_covered();
-                        auto set_diff = set_utils::set_difference(adjacent_covered, adj_num_adj_covered);
+                        auto adj_hint_adj_covered = adj_hint->adjacent_covered();
+                        auto set_diff = set_utils::set_difference(adjacent_covered, adj_hint_adj_covered);
                         auto mines_diff = node_mines - adj_mines;
                         if (set_diff.size() == mines_diff) {
                             flag.merge(set_diff);
@@ -231,19 +231,19 @@ namespace minesweeper::solver {
     std::set<Node*> AdvancedSolver::safe(SolverState state) {
         std::set<Node*> safe_nodes;
         
-        auto num_edge = state.number_edge();
-        for (auto node : num_edge) {
+        auto hint_edge = state.hint_edge();
+        for (auto node : hint_edge) {
             if (node->adjacent_mines_left() == 1) {
                 auto adjacent_covered = node->adjacent_covered();
                 for (auto adj_node : adjacent_covered) {
-                    auto adj_nums = adj_node->adjacent_active_numbers();
-                    for (auto adj_num : adj_nums) {
-                        auto adj_num_adj_covered = adj_num->adjacent_covered();
-                        auto set_diff = set_utils::set_difference(adj_num_adj_covered, adjacent_covered);
-                        if (set_diff.size() < adj_num->adjacent_mines_left()) {
+                    auto adj_hints = adj_node->adjacent_active_hints();
+                    for (auto adj_hint : adj_hints) {
+                        auto adj_hint_adj_covered = adj_hint->adjacent_covered();
+                        auto set_diff = set_utils::set_difference(adj_hint_adj_covered, adjacent_covered);
+                        if (set_diff.size() < adj_hint->adjacent_mines_left()) {
                             // Any nodes not shared by the two numbers, must be safe
-                            // otherwise, adj_num cannot reach the required number of mines
-                            set_diff = set_utils::set_difference(adjacent_covered, adj_num_adj_covered);
+                            // otherwise, adj_hint cannot reach the required number of mines
+                            set_diff = set_utils::set_difference(adjacent_covered, adj_hint_adj_covered);
                             safe_nodes.merge(set_diff);
                         }
                     }
@@ -261,13 +261,13 @@ namespace minesweeper::solver {
         // 2 = 1a + 1b + 1c + 1d 
         // using adjacent mines and covered neighbors
         sle::SystemOfLinearEquations equations;
-        auto number_edge = state.number_edge();
-        for (auto num_node : number_edge) {
-            auto mines = num_node->adjacent_mines_left();
+        auto hint_edge = state.hint_edge();
+        for (auto hint : hint_edge) {
+            auto mines = hint->adjacent_mines_left();
             Fraction total { mines };
             sle::Coefficients coefficients;
 
-            auto adj_covered = num_node->adjacent_covered();
+            auto adj_covered = hint->adjacent_covered();
             for (auto node : adj_covered) {
                 coefficients.insert({ node, 1});
             }

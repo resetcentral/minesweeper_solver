@@ -8,7 +8,7 @@ namespace minesweeper::solver {
     Node::Node(unsigned int x, unsigned int y)
         : _coord { x, y } {}
 
-    const std::pair<unsigned int, unsigned int>& Node::coord() const {
+    std::pair<unsigned int, unsigned int> Node::coord() const {
         return _coord;
     }
 
@@ -22,11 +22,11 @@ namespace minesweeper::solver {
         if (value == Minesweeper::FLAG) {
             set_mine_probability(1);
             for (auto node : _adjacent) {
-                if (node->value() <= 8) {
+                if (node->is_hint()) {
                     node->_adjacent_mines_left--;
                 }
             }
-        } else if (value <= 8) {
+        } else if (is_hint()) {
             set_mine_probability(0);
             _adjacent_mines_left = value;
             for (auto node : _adjacent) {
@@ -41,6 +41,12 @@ namespace minesweeper::solver {
         return _adjacent;
     }
 
+    void Node::add_adjacent(Node* node) {
+        if(_adjacent.insert(node).second) {
+            node->add_adjacent(this);
+        }
+    }
+
     std::set<Node*> Node::adjacent_covered() const {
         std::set<Node*> covered;
         for (auto node : _adjacent) {
@@ -48,19 +54,7 @@ namespace minesweeper::solver {
                 covered.insert(node);
             }
         }
-
         return covered;
-    }
-
-    std::set<Node*> Node::adjacent_active_numbers() {
-        std::set<Node*> numbers;
-        for (auto node : _adjacent) {
-            if (node->value() <= 8 && node->adjacent_mines_left() > 0) {
-                numbers.insert(node);
-            }
-        }
-
-        return numbers;
     }
 
     unsigned int Node::adjacent_covered_count() const {
@@ -70,14 +64,17 @@ namespace minesweeper::solver {
                 count++;
             }
         }
-
         return count;
     }
 
-    void Node::add_adjacent(Node* node) {
-        if(_adjacent.insert(node).second) {
-            node->add_adjacent(this);
+    std::set<Node*> Node::adjacent_active_hints() {
+        std::set<Node*> numbers;
+        for (auto node : _adjacent) {
+            if (node->is_hint() && node->adjacent_mines_left() > 0) {
+                numbers.insert(node);
+            }
         }
+        return numbers;
     }
 
     Fraction Node::mine_probability() const {
@@ -85,7 +82,7 @@ namespace minesweeper::solver {
     }
 
     void Node::set_mine_probability(Fraction mp) {
-        if (mp > 1) {
+        if (mp < 0 || mp > 1) {
             throw std::invalid_argument("Mine probability cannot be less than 0 or greater than 1.");
         }
 
@@ -96,10 +93,14 @@ namespace minesweeper::solver {
         return _adjacent_mines_left;
     }
 
+    bool Node::is_hint() const {
+        return _value >= 0 && _value <= 8;
+    }
+
     bool Node::covered_edge() const {
         if (_value == Minesweeper::COVERED) {
             for (auto node : _adjacent) {
-                if (node->value() <= 8) {
+                if (node->is_hint()) {
                     return true;
                 }
             }
@@ -107,8 +108,8 @@ namespace minesweeper::solver {
         return false;
     }
 
-    bool Node::number_edge() const {
-        if (_value <= 8) {
+    bool Node::hint_edge() const {
+        if (is_hint()) {
             for (auto node : _adjacent) {
                 if (node->value() == Minesweeper::COVERED) {
                     return true;
@@ -124,7 +125,7 @@ namespace minesweeper::solver {
         }
 
         for (auto adj_node: _adjacent) {
-            if (adj_node->value() <= 8 && adj_node->adjacent_mines_left() == 0) {
+            if (adj_node->is_hint() && adj_node->adjacent_mines_left() == 0) {
                 return true;
             }
         }

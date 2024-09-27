@@ -110,6 +110,12 @@ TEST_F(NodeTest, SetValueNum) {
     EXPECT_EQ(nodes[1][1]->adjacent_mines_left(), 3);
 }
 
+TEST_F(NodeTest, SetValueIsHint) {
+    EXPECT_FALSE(nodes[1][1]->is_hint());
+    nodes[1][1]->set_value(3);
+    EXPECT_TRUE(nodes[1][1]->is_hint());
+}
+
 TEST_F(NodeTest, SetValueFlagAdjacentNum) {
     nodes[0][0]->set_value(2);
     nodes[2][1]->set_value(4);
@@ -178,15 +184,15 @@ TEST_F(NodeTest, NumberEdge) {
     nodes[1][0]->set_value(1);
     nodes[1][1]->set_value(1);
     
-    EXPECT_FALSE(nodes[0][0]->number_edge());
-    EXPECT_TRUE(nodes[0][1]->number_edge());
-    EXPECT_FALSE(nodes[0][2]->number_edge());
-    EXPECT_TRUE(nodes[1][0]->number_edge());
-    EXPECT_TRUE(nodes[1][1]->number_edge());
-    EXPECT_FALSE(nodes[1][2]->number_edge());
-    EXPECT_FALSE(nodes[2][0]->number_edge());
-    EXPECT_FALSE(nodes[2][1]->number_edge());
-    EXPECT_FALSE(nodes[2][2]->number_edge());
+    EXPECT_FALSE(nodes[0][0]->hint_edge());
+    EXPECT_TRUE(nodes[0][1]->hint_edge());
+    EXPECT_FALSE(nodes[0][2]->hint_edge());
+    EXPECT_TRUE(nodes[1][0]->hint_edge());
+    EXPECT_TRUE(nodes[1][1]->hint_edge());
+    EXPECT_FALSE(nodes[1][2]->hint_edge());
+    EXPECT_FALSE(nodes[2][0]->hint_edge());
+    EXPECT_FALSE(nodes[2][1]->hint_edge());
+    EXPECT_FALSE(nodes[2][2]->hint_edge());
 }
 
 TEST_F(NodeTest, CoveredSafe) {

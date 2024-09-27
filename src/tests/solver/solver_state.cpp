@@ -56,7 +56,7 @@ TEST_F(SolverStateTest, CoveredEdgeInitial) {
 }
 
 TEST_F(SolverStateTest, NumberEdgeInitial) {
-    EXPECT_EQ(state->number_edge().size(), 0);
+    EXPECT_EQ(state->hint_edge().size(), 0);
 }
 
 TEST_F(SolverStateTest, Update) {
@@ -110,7 +110,7 @@ TEST_F(SolverStateTest, CoveredEdge) {
 
 TEST_F(SolverStateTest, NumberEdge) {
     state->update(state->get_node(0, 0), field2);
-    EXPECT_THAT(state->number_edge(), UnorderedElementsAre(
+    EXPECT_THAT(state->hint_edge(), UnorderedElementsAre(
         state->get_node(0, 1),
         state->get_node(1, 0), state->get_node(1, 1)
     ));

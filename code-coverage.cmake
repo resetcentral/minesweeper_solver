@@ -606,8 +606,8 @@ function(add_code_coverage_all_targets)
             ${CMAKE_COVERAGE_OUTPUT_DIRECTORY}/binaries.list\; llvm-cov.exe
             export $$FILELIST
             -instr-profile=${CMAKE_COVERAGE_OUTPUT_DIRECTORY}/all-merged.profdata
-            -format="text" ${EXCLUDE_REGEX} >
-            ${CMAKE_COVERAGE_OUTPUT_DIRECTORY}/coverage.json
+            -format="lcov" ${EXCLUDE_REGEX} >
+            ${CMAKE_COVERAGE_OUTPUT_DIRECTORY}/lcov.info
           DEPENDS ccov-all-processing)
       else()
         add_custom_target(
@@ -616,8 +616,8 @@ function(add_code_coverage_all_targets)
             ${LLVM_COV_PATH} export `cat
             ${CMAKE_COVERAGE_OUTPUT_DIRECTORY}/binaries.list`
             -instr-profile=${CMAKE_COVERAGE_OUTPUT_DIRECTORY}/all-merged.profdata
-            -format="text" ${EXCLUDE_REGEX} >
-            ${CMAKE_COVERAGE_OUTPUT_DIRECTORY}/coverage.json
+            -format="lcov" ${EXCLUDE_REGEX} >
+            ${CMAKE_COVERAGE_OUTPUT_DIRECTORY}/lcov.info
           DEPENDS ccov-all-processing)
       endif()
 

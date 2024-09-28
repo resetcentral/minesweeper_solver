@@ -25,7 +25,7 @@ namespace minesweeper::solver::sle {
      * rational number.
      */
     class SystemOfLinearEquations {
-        std::vector<Equation> equations;
+        std::vector<Equation> _equations;
         static unsigned int unknown_variables_count(const Coefficients& coefficients, const Assignments& assignments);
         static Equation subtract_equations(Equation left, const Equation& right);
         static Equation scale_equation(Equation equation, const Fraction& scale);
@@ -45,6 +45,13 @@ namespace minesweeper::solver::sle {
          *      variables is not one
          */
         static std::pair<Node*, Fraction> solve(Equation equation, const Assignments& assignments);
+
+        /**
+         * Get all equations in the system of linear equations.
+         * 
+         * @return list of Equations
+         */
+        std::vector<Equation> equations() const;
 
         /**
          * Get all variables in the system of linear equations.

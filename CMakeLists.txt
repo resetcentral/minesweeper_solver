@@ -100,6 +100,7 @@ add_executable(
 )
 target_link_libraries(
   solver_sle_test
+  sle
   node
   GTest::gtest_main
   gmock_main
@@ -148,6 +149,8 @@ gtest_discover_tests(solver_test)
 
 target_code_coverage(generator_test)
 target_code_coverage(minesweeper_test)
+target_code_coverage(solver_sle_test)
 target_code_coverage(solver_node_test)
 target_code_coverage(solver_state_test)
 target_code_coverage(solver_test)
+add_code_coverage_all_targets()

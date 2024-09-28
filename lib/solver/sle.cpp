@@ -90,9 +90,18 @@ namespace minesweeper::solver::sle {
         }
     }
 
+    std::vector<Equation> SystemOfLinearEquations::equations() const {
+        std::vector<Equation> eqs{};
+
+        for (auto eq : _equations) {
+            eqs.push_back(eq);
+        }
+        return eqs;
+    }
+
     std::set<Node*> SystemOfLinearEquations::variables() const {
         std::set<Node*> vars;
-        for (auto &[coefficients, total] : equations) {
+        for (auto &[coefficients, total] : _equations) {
             for (auto &[key, coeff] : coefficients) {
                 vars.insert(key);
             }
@@ -105,30 +114,30 @@ namespace minesweeper::solver::sle {
 
         // In row echelon form, the 1st variable in each equation is dependent
         auto vars = variables();
-        for (auto &[coefficients, total] : equations) {
+        for (auto &[coefficients, total] : _equations) {
             vars.erase(coefficients.begin()->first);
         }
         return vars;
     }
 
     void SystemOfLinearEquations::add_equation(Coefficients coefficients, Fraction total) {
-        equations.emplace_back(coefficients, total);
+        _equations.emplace_back(coefficients, total);
     }
 
     void SystemOfLinearEquations::convert_row_echelon() {
-        for (auto i = 0; i < equations.size(); i++) {
-            auto &[eq1_coefficients, total] = equations[i];
+        for (auto i = 0; i < _equations.size(); i++) {
+            auto &[eq1_coefficients, total] = _equations[i];
             if (eq1_coefficients.size() > 0) {
                 auto &[var, coeff] = *eq1_coefficients.begin();
 
                 /* Subtract a scaled version of equation[i] from every equation
                 after it that includes `var` */
-                for (auto j = i+1; j < equations.size(); j++) {
-                    auto eq2_coefficients = equations[j].first;
+                for (auto j = i+1; j < _equations.size(); j++) {
+                    auto eq2_coefficients = _equations[j].first;
                     if (eq2_coefficients.contains(var)) {
                         auto scale = eq2_coefficients[var] / coeff;
-                        auto scaled = scale_equation(equations[i], scale);
-                        equations[j] = subtract_equations(equations[j], scaled);
+                        auto scaled = scale_equation(_equations[i], scale);
+                        _equations[j] = subtract_equations(_equations[j], scaled);
                     }
                 }
             }
@@ -137,8 +146,8 @@ namespace minesweeper::solver::sle {
 
     void SystemOfLinearEquations::evaluate(Assignments& assignments) const {
         std::queue<Equation> sub_equations;
-        for (auto i = 0; i < equations.size(); i++) {
-            sub_equations.push(equations[i]);
+        for (auto i = 0; i < _equations.size(); i++) {
+            sub_equations.push(_equations[i]);
         }
 
         while (!sub_equations.empty()) {
@@ -163,8 +172,8 @@ namespace minesweeper::solver::sle {
     }
 
     void SystemOfLinearEquations::print() const {
-        printf("Number of Equations: %zu\n", equations.size());
-        for (auto &[coefficients, total] : equations) {
+        printf("Number of Equations: %zu\n", _equations.size());
+        for (auto &[coefficients, total] : _equations) {
             for (auto &[key, coeff] : coefficients) {
                 printf("%.2f(%p) + ", boost::rational_cast<double>(coeff), key);
             }

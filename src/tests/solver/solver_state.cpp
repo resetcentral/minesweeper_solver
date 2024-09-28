@@ -6,6 +6,7 @@ using ::testing::UnorderedElementsAre;
 using ::testing::Pair;
 
 using namespace minesweeper::solver;
+using minesweeper::Minefield;
 
 class SolverStateTest : public ::testing::Test {
 protected:
@@ -33,6 +34,16 @@ protected:
     }
 };
 
+TEST(SolverStateConstructorTest, ZeroWidth) {
+    Minefield m {};
+    EXPECT_THROW(SolverState state(m), std::invalid_argument);
+}
+
+TEST(SolverStateConstructorTest, ZeroHeight) {
+    Minefield m {{}};
+    EXPECT_THROW(SolverState state(m), std::invalid_argument);
+}
+
 TEST_F(SolverStateTest, Width) {
     EXPECT_EQ(state->width(), 4);
 }
@@ -59,19 +70,36 @@ TEST_F(SolverStateTest, NumberEdgeInitial) {
     EXPECT_EQ(state->hint_edge().size(), 0);
 }
 
-TEST_F(SolverStateTest, Update) {
-    auto node = state->get_node(0, 0);
+TEST_F(SolverStateTest, UpdateSingle) {
+    auto node = state->get_node(1, 0);
 
+    EXPECT_EQ(state->get_node(0, 0)->value(), Tile::Covered);
     EXPECT_EQ(node->value(), Tile::Covered);
     EXPECT_EQ(state->get_node(0, 1)->value(), Tile::Covered);
-    EXPECT_EQ(state->get_node(1, 0)->value(), Tile::Covered);
     EXPECT_EQ(state->get_node(1, 1)->value(), Tile::Covered);
 
     state->update(node, field2);
 
-    EXPECT_EQ(node->value(), 0);
+    EXPECT_EQ(state->get_node(0, 0)->value(), Tile::Covered);
+    EXPECT_EQ(node->value(), Tile(2));
+    EXPECT_EQ(state->get_node(0, 1)->value(), Tile::Covered);
+    EXPECT_EQ(state->get_node(1, 1)->value(), Tile::Covered);
+}
+
+TEST_F(SolverStateTest, UpdateZero) {
+    auto node1 = state->get_node(0, 0);
+    auto node2 = state->get_node(1, 0);    
+    node2->set_value(Tile(2));
+
+    EXPECT_EQ(node1->value(), Tile::Covered);
+    EXPECT_EQ(node2->value(), Tile(2));
+    EXPECT_EQ(state->get_node(0, 1)->value(), Tile::Covered);
+    EXPECT_EQ(state->get_node(1, 1)->value(), Tile::Covered);
+
+    state->update(node1, field2);
+    EXPECT_EQ(node1->value(), 0);
+    EXPECT_EQ(node2->value(), 2);
     EXPECT_EQ(state->get_node(0, 1)->value(), 1);
-    EXPECT_EQ(state->get_node(1, 0)->value(), 2);
     EXPECT_EQ(state->get_node(1, 1)->value(), 3);
 }
 

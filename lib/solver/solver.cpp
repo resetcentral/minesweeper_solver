@@ -425,8 +425,8 @@ namespace minesweeper::solver {
     void MinesweeperSolver::check_game_state(Minesweeper::GameState game_state) {
         switch (game_state) {
             case Minesweeper::GameState::Lose: {
-                throw std::logic_error("Oops! Clicked on a mine");
-                break;
+                printf("Oops! Clicked on a mine.\n");
+                exit(1);
             }
             case Minesweeper::GameState::Win: {
                 for (auto node : state.covered()) {

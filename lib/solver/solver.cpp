@@ -168,7 +168,7 @@ namespace minesweeper::solver {
             printf("\n");
         }
         printf("\n");
-        // std::this_thread::sleep_for(std::chrono::milliseconds(250)); TODO move this
+        std::this_thread::sleep_for(std::chrono::milliseconds(250));
     }
     
     // BasicSolver

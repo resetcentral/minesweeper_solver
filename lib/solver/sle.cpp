@@ -173,12 +173,12 @@ namespace minesweeper::solver::sle {
     }
 
     void SystemOfLinearEquations::print() const {
-        std::cout << "Number of Equations: " << _equations.size() << std::endl;
+        std::cout << "Number of Equations: " << _equations.size() << "\n";
         for (auto &[coefficients, total] : _equations) {
             for (auto &[key, coeff] : coefficients) {
                 std::cout << coeff << "(" << key << ")";
             }
-            std::cout << "= " << total << std::endl;
+            std::cout << "= " << total << "\n";
         }
         std::cout << std::endl;
     }

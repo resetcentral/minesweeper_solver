@@ -136,7 +136,7 @@ namespace minesweeper::solver {
 
     void StateLogger::log(SolverState state) {
         system("clear");
-        std::cout << "Solve Mode in Use: " << _mode << std::endl << std::endl;
+        std::cout << "Solve Mode in Use: " << _mode << "\n\n";
         auto selected_coords = state.selected().coord();
         for (auto y = 0; y < state.height(); y++) {
             for (auto x = 0; x < state.width(); x++) {
@@ -167,7 +167,7 @@ namespace minesweeper::solver {
                     std::cout << "\x1b[0m"; // Reset color
                 }
             }
-            std::cout << std::endl;
+            std::cout << "\n";
         }
         std::cout << std::endl;
         std::this_thread::sleep_for(std::chrono::milliseconds(250));
@@ -327,8 +327,6 @@ namespace minesweeper::solver {
             i++;
         }
         auto sample = ind_vars.size() > 10;
-        std::cout << "Calculating..." << std::endl;
-
         auto max = 1UL << ind_vars.size();
 
         std::mt19937_64 rng(std::random_device{}());
@@ -383,7 +381,7 @@ namespace minesweeper::solver {
     }
 
     void ProbableSolver::print_probabilities(SolverState state) {
-        std::cout << std::endl;
+        std::cout << "\n";
         for (auto y = 0; y < state.height(); y++) {
             for (auto x = 0; x < state.width(); x++) {
                 auto node = state.get_node(x, y);
@@ -393,7 +391,7 @@ namespace minesweeper::solver {
                 std::cout << node->mine_probability() << " ";
                 std::cout << "\x1b[0m"; // Reset color
             }
-            std::cout << std::endl;
+            std::cout << "\n";
         }
         std::cout << std::endl;
     }

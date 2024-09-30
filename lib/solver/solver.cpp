@@ -130,6 +130,9 @@ namespace minesweeper::solver {
     }
 
     // State logger
+    StateLogger::StateLogger(unsigned int animation_delay_ms) 
+        : animation_delay { animation_delay_ms} {}
+
     void StateLogger::set_mode(const char* mode) {
         _mode = mode;
     }
@@ -170,7 +173,7 @@ namespace minesweeper::solver {
             std::cout << "\n";
         }
         std::cout << std::endl;
-        std::this_thread::sleep_for(std::chrono::milliseconds(250));
+        std::this_thread::sleep_for(std::chrono::milliseconds(animation_delay));
     }
     
     // BasicSolver

@@ -93,7 +93,10 @@ namespace minesweeper::solver {
 
     class StateLogger {
         const char* _mode = "";
+        unsigned int animation_delay;
     public:
+        StateLogger(unsigned int animation_delay_ms);
+
         void set_mode(const char* mode);
 
         void log(SolverState state);

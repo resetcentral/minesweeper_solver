@@ -42,15 +42,6 @@ class MinesweeperTest : public ::testing::Test {
         MinefieldGenerator gen { 100 };
         this->game = new Minesweeper (gen, 9, 12, 14 );
         this->init_covered_tiles = 9 * 12;
-        
-        // MinefieldGenerator g2 { 100 };
-        // Minefield field = g2.generate(9, 12, 14);
-        // for (auto y = 0; y < 12; y++) {
-        //     for (auto x = 0; x < 9; x++) {
-        //         printf("%d ", field[x][y]);
-        //     }
-        //     printf("\n");
-        // }
     }
 
     virtual void TearDown() {

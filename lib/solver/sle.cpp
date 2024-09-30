@@ -1,5 +1,6 @@
 #include <solver/sle.hpp>
 #include <queue>
+#include <iostream>
 
 namespace minesweeper::solver::sle {
     // SystemOfLinearEquations implementation
@@ -172,13 +173,13 @@ namespace minesweeper::solver::sle {
     }
 
     void SystemOfLinearEquations::print() const {
-        printf("Number of Equations: %zu\n", _equations.size());
+        std::cout << "Number of Equations: " << _equations.size() << std::endl;
         for (auto &[coefficients, total] : _equations) {
             for (auto &[key, coeff] : coefficients) {
-                printf("%.2f(%p) + ", boost::rational_cast<double>(coeff), key);
+                std::cout << coeff << "(" << key << ")";
             }
-            printf("= %.2f\n", boost::rational_cast<double>(total));
+            std::cout << "= " << total << std::endl;
         }
-        printf("\n");
+        std::cout << std::endl;
     }
 }

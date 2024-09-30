@@ -7,6 +7,7 @@
 #include <iterator>
 #include <unordered_map>
 #include <map>
+#include <iostream>
 
 namespace minesweeper::solver {
     using minesweeper::Minesweeper;
@@ -135,39 +136,40 @@ namespace minesweeper::solver {
 
     void StateLogger::log(SolverState state) {
         system("clear");
-        printf("Solve Mode in Use: %s\n\n", _mode);
+        std::cout << "Solve Mode in Use: " << _mode << std::endl << std::endl;
         auto selected_coords = state.selected().coord();
         for (auto y = 0; y < state.height(); y++) {
             for (auto x = 0; x < state.width(); x++) {
                 if (x == selected_coords.first && y == selected_coords.second) {
-                    printf("\x1b[32m"); // Green
+                    std::cout << "\x1b[32m"; // Green
                 }
 
                 auto value = state.get_node(x, y)->value();
                 switch (value) {
                     case Tile::Mine:
-                        printf("* ");
+                        std::cout << "*";
                         break;
                     case Tile::Flag:
-                        printf("f ");
+                        std::cout << "f";
                         break;
                     case Tile::Covered:
-                        printf("O ");
+                        std::cout << "O";
                         break;
                     case 0:
-                        printf("  ");
+                        std::cout << " ";
                         break;
                     default:
-                        printf("%d ", value);
+                        std::cout << value;
                 }
+                std::cout << " ";
 
                 if (x == selected_coords.first && y == selected_coords.second) {
-                    printf("\x1b[0m"); // Reset color
+                    std::cout << "\x1b[0m"; // Reset color
                 }
             }
-            printf("\n");
+            std::cout << std::endl;
         }
-        printf("\n");
+        std::cout << std::endl;
         std::this_thread::sleep_for(std::chrono::milliseconds(250));
     }
     
@@ -325,7 +327,7 @@ namespace minesweeper::solver {
             i++;
         }
         auto sample = ind_vars.size() > 10;
-        printf("Calculating...\n");
+        std::cout << "Calculating..." << std::endl;
 
         auto max = 1UL << ind_vars.size();
 
@@ -381,19 +383,19 @@ namespace minesweeper::solver {
     }
 
     void ProbableSolver::print_probabilities(SolverState state) {
-        printf("\n");
+        std::cout << std::endl;
         for (auto y = 0; y < state.height(); y++) {
             for (auto x = 0; x < state.width(); x++) {
                 auto node = state.get_node(x, y);
                 if (node->value() == Tile::Covered) {
-                    printf("\x1b[32m"); // Green
+                    std::cout << "\x1b[32m"; // Green
                 }
-                printf("%3d/%d", node->mine_probability().numerator(), node->mine_probability().denominator());
-                printf("\x1b[0m"); // Reset color
+                std::cout << node->mine_probability() << " ";
+                std::cout << "\x1b[0m"; // Reset color
             }
-            printf("\n");
+            std::cout << std::endl;
         }
-        printf("\n");
+        std::cout << std::endl;
     }
 
     
@@ -425,14 +427,14 @@ namespace minesweeper::solver {
     void MinesweeperSolver::check_game_state(Minesweeper::GameState game_state) {
         switch (game_state) {
             case Minesweeper::GameState::Lose: {
-                printf("Oops! Clicked on a mine.\n");
+                std::cout << "Oops! Clicked on a mine." << std::endl;
                 exit(1);
             }
             case Minesweeper::GameState::Win: {
                 for (auto node : state.covered()) {
                     flag_or_uncover(node, true);
                 }
-                printf("Minefield Swept!\n");
+                std::cout << "Minefield Swept!" << std::endl;
                 exit(0);
             }
             default:

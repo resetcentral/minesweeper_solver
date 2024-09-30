@@ -6,12 +6,6 @@ using namespace minesweeper;
 TEST(MinefieldGeneratorTest, ThreeByThree) {
   MinefieldGenerator gen { 5001 };
   Minefield field = gen.generate(3, 3, 3);
-  for (auto i = 0; i < 3; i++) {
-    for (auto j = 0; j < 3; j++) {
-      printf("%d ", field[i][j]);
-    }
-    printf("\n");
-  }
 
   unsigned short expected[3][3] = {
     { 0, 1, 1 },

@@ -148,7 +148,5 @@ namespace minesweeper::solver {
          * @return is covered and adjacent to a hint with no adjacent mines
          */
         bool covered_safe() const;
-
-        ~Node();
     };
 }
